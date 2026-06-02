@@ -1,8 +1,8 @@
-# Low Review Risk Modeling Summary
+# Post-Delivery Low Review Risk Modeling Summary
 
 ## Objective
 
-Predict whether a delivered order is likely to receive a low review score (`review_score <= 2`).
+Rank delivered orders by the probability of receiving a low review score (`review_score <= 2`).
 
 ## Data Split
 
@@ -14,7 +14,7 @@ Predict whether a delivered order is likely to receive a low review score (`revi
 
 ## Leakage Control
 
-The model excludes review text, review score, review count, and any field derived directly from the review outcome.
+The model excludes review text, review score, review count, and any field derived directly from the review outcome. It does include post-delivery operational fields such as actual delivery days and late-delivery status, so it is designed for service recovery and operational review after delivery.
 
 ## Model Performance
 
@@ -25,6 +25,6 @@ The model excludes review text, review score, review count, and any field derive
 
 ## Interpretation
 
-I treat the model as a risk-ranking tool rather than an automated decision system. It can help prioritize orders for customer support follow-up or operational review.
+I treat the model as a post-delivery risk-ranking tool rather than an automated decision system. It can help prioritize delivered orders for customer support follow-up or operational review.
 
 A useful next improvement would be to compare two versions of the model: one available at purchase time and one available after delivery. That would separate prevention use cases from post-delivery recovery use cases.

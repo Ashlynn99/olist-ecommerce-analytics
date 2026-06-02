@@ -25,7 +25,7 @@ This adds context to the delivery-delay finding: longer and cross-state routes a
 
 ## 3. Model Lift and Business Simulation
 
-I converted the low-review model into a prioritization view for a limited customer support team.
+I converted the post-delivery low-review model into a prioritization view for a limited customer support team.
 
 - Test ROC-AUC: 0.763
 - Test PR-AUC: 0.446
@@ -34,7 +34,7 @@ I converted the low-review model into a prioritization view for a limited custom
 - Top 10% lift vs baseline: 4.17x
 - Top 20% highest-risk orders capture 56.5% of low reviews
 
-This makes the model easier to discuss in business terms: it shows how much low-review risk can be covered if the team only reviews the riskiest orders.
+This makes the model easier to discuss in business terms: it shows how much low-review risk can be covered if the team only reviews the riskiest delivered orders.
 
 ## Project Positioning
 

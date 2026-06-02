@@ -26,6 +26,13 @@ product_category_name_translation.csv
 
 Run:
 
+```bash
+make data
+make analysis
+```
+
+or run the cleaning notebook directly:
+
 ```text
 notebooks/02_data_cleaning.ipynb
 ```
@@ -52,7 +59,7 @@ seller_order_base.csv
 Run:
 
 ```bash
-python sql/00_create_database.py
+make sql
 ```
 
 or run:

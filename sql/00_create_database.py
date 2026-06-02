@@ -69,8 +69,8 @@ def main() -> None:
             SELECT
                 purchase_month,
                 COUNT(*) AS orders,
-                SUM(payment_total) AS gmv,
-                AVG(payment_total) AS aov,
+                SUM(payment_total) AS gross_payment_volume,
+                AVG(payment_total) AS avg_payment_value,
                 SUM(product_total) AS product_total,
                 SUM(freight_total) AS freight_total,
                 AVG(review_score_mean) AS avg_review_score,
@@ -88,8 +88,8 @@ def main() -> None:
             SELECT
                 main_product_category,
                 COUNT(*) AS orders,
-                SUM(payment_total) AS gmv,
-                AVG(payment_total) AS aov,
+                SUM(payment_total) AS gross_payment_volume,
+                AVG(payment_total) AS avg_payment_value,
                 SUM(freight_total) / NULLIF(SUM(payment_total), 0) AS freight_share,
                 AVG(review_score_mean) AS avg_review_score,
                 AVG(CAST(is_low_review AS INTEGER)) AS low_review_rate,
@@ -107,8 +107,8 @@ def main() -> None:
             SELECT
                 customer_state,
                 COUNT(*) AS orders,
-                SUM(payment_total) AS gmv,
-                AVG(payment_total) AS aov,
+                SUM(payment_total) AS gross_payment_volume,
+                AVG(payment_total) AS avg_payment_value,
                 AVG(review_score_mean) AS avg_review_score,
                 AVG(CAST(is_low_review AS INTEGER)) AS low_review_rate,
                 AVG(CASE WHEN is_delivered THEN CAST(is_late AS INTEGER) END) AS late_rate,

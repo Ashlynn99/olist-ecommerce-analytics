@@ -1,0 +1,32 @@
+PYTHON ?= python3
+VENV ?= .venv
+PYTHON_BIN := $(VENV)/bin/python
+PIP := $(VENV)/bin/pip
+
+.PHONY: setup data analysis sql report all clean
+
+setup:
+	$(PYTHON) -m venv $(VENV)
+	$(PYTHON_BIN) -m pip install --upgrade pip
+	$(PIP) install -r requirements.txt
+
+data:
+	$(PYTHON_BIN) scripts/check_data.py
+
+analysis:
+	$(PYTHON_BIN) scripts/run_pipeline.py
+
+sql:
+	$(PYTHON_BIN) sql/00_create_database.py
+
+report:
+	@printf "Main report: reports/final_report.md\n"
+	@printf "EDA findings: reports/eda_key_findings.md\n"
+	@printf "Model summary: reports/modeling_low_review_summary.md\n"
+	@printf "Additional analysis: reports/additional_analysis_summary.md\n"
+
+all: data analysis report
+
+clean:
+	@printf "Generated data and report outputs are intentionally kept.\n"
+	@printf "Remove data/processed/, data/database/, or reports/figures/ manually only if you want a fresh rebuild.\n"

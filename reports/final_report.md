@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, and low-review risk. The project combines Python data cleaning, business EDA, SQL analysis, and a simple machine learning model.
+I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, and post-delivery low-review risk. The project combines Python data cleaning, business EDA, SQL analysis, and a simple machine learning model.
 
 The main finding is that customer experience is closely related to delivery performance. Orders delivered more than 15 days late have a low-review rate of 78.9%, while the overall low-review rate is 14.7%. This makes delivery delay the clearest operational issue in the analysis.
 
@@ -49,21 +49,23 @@ data/processed/orders_analysis_base.csv
 | Total orders | 99,441 |
 | Delivered orders | 96,470 |
 | Delivery rate | 97.0% |
-| GMV based on payment total | 16,008,872 BRL |
-| Average order value | 161 BRL |
+| Gross payment volume, based on `payment_total` including freight | 16,008,872 BRL |
+| Average payment value per order | 161 BRL |
 | Freight share of payment total | 14.1% |
 | Average delivery time | 12.6 days |
 | Late delivery rate | 8.1% |
 | Average review score | 4.09 |
 | Low-review rate | 14.7% |
 
+`payment_total` includes product value and freight, so I treat this measure as gross payment volume rather than merchandise-only GMV. Product revenue and freight value are tracked separately in the analytical table.
+
 ## Growth Analysis
 
-The strongest GMV month was 2017-11, with 1,194,883 BRL GMV and 7,544 orders. Monthly order and GMV trends show clear growth across most of the observed period, with seasonal peaks and later-period volatility.
+The strongest gross payment volume month was 2017-11, with 1,194,883 BRL and 7,544 orders. Monthly order and payment trends show clear growth across most of the observed period, with seasonal peaks and later-period volatility.
 
 Relevant figure:
 
-![Monthly Orders and GMV](figures/monthly_orders_gmv.png)
+![Monthly Orders and Gross Payment Volume](figures/monthly_orders_gmv.png)
 
 ## Delivery and Customer Experience
 
@@ -82,11 +84,11 @@ Relevant figure:
 
 ## Category Analysis
 
-The top category by GMV was `health_beauty`, generating 1,442,254 BRL GMV across 8,802 orders.
+The top category by revenue was `health_beauty`, generating 1,442,254 BRL across 8,802 orders.
 
 Category analysis should not be based on revenue alone. A more useful management view combines:
 
-- GMV
+- Revenue
 - Order volume
 - Freight share
 - Average delivery time
@@ -102,7 +104,7 @@ Relevant figure:
 
 ## Geographic Analysis
 
-The top customer state by GMV was SP, with 5,998,227 BRL GMV and 41,746 orders.
+The top customer state by gross payment volume was SP, with 5,998,227 BRL and 41,746 orders.
 
 State-level analysis helps identify where revenue is concentrated and where delivery experience differs. This can support logistics planning, regional seller development, and customer support prioritization.
 
@@ -124,9 +126,9 @@ The project includes SQL files for:
 
 This mirrors a realistic analytics workflow where Python handles cleaning and modeling, while SQL handles repeatable business queries.
 
-## Machine Learning Model
+## Post-Delivery Low-Review Risk Model
 
-The machine learning task predicts whether a delivered order will receive a low review score, defined as:
+The machine learning task ranks delivered orders by the probability of receiving a low review score, defined as:
 
 ```text
 review_score <= 2
@@ -144,7 +146,9 @@ Model results:
 | Dummy baseline | 0.500 | 0.134 | 0.000 | 0.000 | 0.000 |
 | Logistic regression, tuned threshold | 0.763 | 0.446 | 0.506 | 0.465 | 0.485 |
 
-The model is best used as a risk-ranking tool. It can help prioritize orders for customer support follow-up or operational review, but it should not be treated as an automated decision system.
+The model is best used as a post-delivery risk-ranking tool. It can help prioritize delivered orders for customer support follow-up or operational review, but it should not be treated as an automated decision system.
+
+Important boundary: the model uses post-delivery features such as actual delivery days, estimated delivery days, delivery delay, and late-delivery status. These variables are only known after delivery, so this is not a pure purchase-time prediction system.
 
 Relevant figures:
 
@@ -216,15 +220,15 @@ Relevant figure:
 
 2. Use category-level experience monitoring.
 
-   Revenue-heavy categories should be monitored together with delay rate, freight share, and low-review rate. High-GMV categories with weak experience metrics deserve closer review.
+   Revenue-heavy categories should be monitored together with delay rate, freight share, and low-review rate. High-revenue categories with weak experience metrics deserve closer review.
 
 3. Build a low-review risk workflow.
 
-   The model can rank delivered orders by dissatisfaction risk. Customer support teams could use this ranking to prioritize outreach before or shortly after reviews are submitted.
+   The model can rank delivered orders by dissatisfaction risk. Customer support teams could use this ranking to prioritize post-delivery outreach or operational review.
 
 4. Use seller scorecards for seller performance monitoring.
 
-   High-value high-risk sellers should be reviewed first because operational improvement in this segment can protect both GMV and customer experience.
+   High-value high-risk sellers should be reviewed first because operational improvement in this segment can protect both marketplace value and customer experience.
 
 5. Separate purchase-time and post-delivery models.
 
@@ -235,6 +239,7 @@ Relevant figure:
 - The dataset is historical and does not reflect current Olist operations.
 - The analysis is observational and does not prove causality.
 - Some features are only available after delivery, so the current model is not a pure purchase-time prediction system.
+- `payment_total` includes freight, so gross payment volume should not be interpreted as merchandise-only GMV.
 - The dataset does not include customer demographics, marketing acquisition channels, or full seller operational history.
 
 ## Conclusion

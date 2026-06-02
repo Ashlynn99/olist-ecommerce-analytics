@@ -4,8 +4,8 @@
 
 - Total orders: 99,441
 - Delivered orders: 96,470 (97.0%)
-- GMV based on payment total: 16,008,872 BRL
-- Average order value: 161 BRL
+- Gross payment volume based on `payment_total`, including freight: 16,008,872 BRL
+- Average payment value per order: 161 BRL
 - Freight share of payment total: 14.1%
 - Average delivery time: 12.6 days
 - Late delivery rate among delivered orders: 8.1%
@@ -14,15 +14,15 @@
 
 ## Growth
 
-- Highest GMV month: 2017-11 with 1,194,883 BRL GMV and 7,544 orders.
+- Highest gross payment volume month: 2017-11 with 1,194,883 BRL and 7,544 orders.
 
 ## Category
 
-- Top category by GMV: health_beauty with 1,442,254 BRL GMV across 8,802 orders.
+- Top category by revenue: health_beauty with 1,442,254 BRL across 8,802 orders.
 
 ## Geography
 
-- Top customer state by GMV: SP with 5,998,227 BRL GMV and 41,746 orders.
+- Top customer state by gross payment volume: SP with 5,998,227 BRL and 41,746 orders.
 
 ## Customer Experience
 

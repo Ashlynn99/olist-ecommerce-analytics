@@ -225,7 +225,7 @@ def create_seller_scorecard(
     ax.axhline(risk_cutoff, color="black", linestyle="--", linewidth=1)
     ax.set_xscale("log")
     ax.set_title("Seller Scorecard: Value vs Low Review Risk")
-    ax.set_xlabel("Seller GMV, log scale")
+    ax.set_xlabel("Seller order value, log scale")
     ax.set_ylabel("Low Review Rate")
     plt.tight_layout()
     plt.savefig(figures_dir / "seller_scorecard_value_risk.png", dpi=160, bbox_inches="tight")
@@ -577,7 +577,7 @@ This adds context to the delivery-delay finding: longer and cross-state routes a
 
 ## 3. Model Lift and Business Simulation
 
-I converted the low-review model into a prioritization view for a limited customer support team.
+I converted the post-delivery low-review model into a prioritization view for a limited customer support team.
 
 - Test ROC-AUC: {metrics['roc_auc']:.3f}
 - Test PR-AUC: {metrics['pr_auc']:.3f}
@@ -586,7 +586,7 @@ I converted the low-review model into a prioritization view for a limited custom
 - Top 10% lift vs baseline: {top_10['lift_vs_baseline']:.2f}x
 - Top 20% highest-risk orders capture {top_20['capture_rate']:.1%} of low reviews
 
-This makes the model easier to discuss in business terms: it shows how much low-review risk can be covered if the team only reviews the riskiest orders.
+This makes the model easier to discuss in business terms: it shows how much low-review risk can be covered if the team only reviews the riskiest delivered orders.
 
 ## Project Positioning
 

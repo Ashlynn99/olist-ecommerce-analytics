@@ -31,7 +31,7 @@ SELECT
     delay_segment,
     freight_segment,
     COUNT(*) AS orders,
-    ROUND(AVG(payment_total), 2) AS aov,
+    ROUND(AVG(payment_total), 2) AS avg_payment_value,
     ROUND(AVG(delivery_days), 2) AS avg_delivery_days,
     ROUND(AVG(CAST(is_low_review AS INTEGER)), 4) AS low_review_rate
 FROM risk_base
