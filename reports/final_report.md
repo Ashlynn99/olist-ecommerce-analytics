@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, observed repeat-purchase behavior, and low-review risk across the order lifecycle. The project combines Python data cleaning, business EDA, SQL analysis, customer cohort analysis, and two leakage-aware machine learning use cases.
+I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, observed repeat-purchase behavior, seller risk, and low-review risk across the order lifecycle. The project combines Python data cleaning, business EDA, SQL analysis, customer cohort analysis, monthly seller monitoring, and two leakage-aware machine learning use cases.
 
 The main finding is that customer experience is closely related to delivery performance. Orders delivered more than 15 days late have a low-review rate of 78.9%, while the overall low-review rate is 14.7%. This makes delivery delay the clearest operational issue in the analysis.
 
@@ -204,7 +204,7 @@ Relevant figures:
 
 ## Additional Analysis
 
-I added three focused extensions to make the project more practical without making the workflow unnecessarily complex.
+I added four focused extensions to make the project more practical without making the workflow unnecessarily complex.
 
 ### Seller Performance Scorecard
 
@@ -220,6 +220,34 @@ This segment is important because these sellers contribute meaningful marketplac
 Relevant figure:
 
 ![Seller Scorecard Value Risk](figures/seller_scorecard_value_risk.png)
+
+### Seller Monthly Risk Monitoring
+
+I converted the static seller scorecard into a recurring seller-month monitoring workflow. The system combines customer-experience risk, deterioration relative to each seller's own history, monthly commercial exposure, and minimum evidence requirements.
+
+Low-review, late-delivery, and cancellation rates are smoothed toward the monthly marketplace rate. This reduces false alerts from sellers with very small monthly samples.
+
+The priority score combines 55% experience risk, 25% deterioration, and 20% seller value, followed by a monthly-volume reliability adjustment. Critical alerts represent the top 10% of eligible sellers by priority score with an experience risk score of at least 60.
+
+Latest complete monitoring month, 2018-08:
+
+| Metric | Value |
+|---|---:|
+| Active sellers | 1,278 |
+| Sellers eligible for alerts | 343 |
+| Critical sellers | 34 |
+| Watch sellers | 49 |
+| Sellers escalated from stable or watch | 44 |
+| Critical sellers' share of monthly seller-order value | 11.6% |
+| Critical sellers' share of monthly seller-orders | 14.3% |
+
+The monitor outputs a prioritized seller watchlist, specific alert drivers, suggested operational actions, and month-over-month status transitions. It should support seller investigation and account management rather than automatic penalties.
+
+Relevant figures:
+
+![Seller Monthly Risk Priority Matrix](figures/seller_monthly_priority_matrix.png)
+
+![Seller Risk Status Transitions](figures/seller_risk_transition_matrix.png)
 
 ### Logistics Distance and Cross-State Delivery
 
@@ -272,9 +300,9 @@ Relevant figure:
 
    The model can rank delivered orders by dissatisfaction risk. Customer support teams could use this ranking to prioritize post-delivery outreach or operational review.
 
-4. Use seller scorecards for seller performance monitoring.
+4. Use seller scorecards and monthly alerts for seller performance monitoring.
 
-   High-value high-risk sellers should be reviewed first because operational improvement in this segment can protect both marketplace value and customer experience.
+   High-value high-risk sellers should be reviewed first. Monthly risk transitions can distinguish persistent risk from newly deteriorating sellers and direct account-management attention.
 
 5. Separate purchase-time and post-delivery models.
 
@@ -291,9 +319,10 @@ Relevant figure:
 - Some features are only available after delivery, so the current model is not a pure purchase-time prediction system.
 - The purchase-time model uses leakage-controlled historical seller outcomes, but data availability in a production system would need to be confirmed.
 - Repeat-purchase metrics are affected by the limited observation period and do not represent true long-term retention.
+- Seller monitoring alerts use relative thresholds and smoothed historical evidence; they support investigation rather than proving seller fault.
 - `payment_total` includes freight, so gross payment volume should not be interpreted as merchandise-only GMV.
 - The dataset does not include customer demographics, marketing acquisition channels, or full seller operational history.
 
 ## Conclusion
 
-This project shows a complete but focused analytics workflow: raw data understanding, cleaning, business analysis, SQL querying, and predictive modeling. The main business takeaway is that logistics performance is closely tied to customer satisfaction, and that low-review risk can be modeled well enough to support prioritization and operational follow-up.
+This project shows a complete but focused analytics workflow: raw data understanding, cleaning, business analysis, SQL querying, predictive modeling, customer lifecycle analysis, and seller monitoring. The main business takeaway is that logistics performance is closely tied to customer satisfaction, and that order and seller risk can be structured into practical prioritization workflows.

@@ -3,7 +3,7 @@ VENV ?= .venv
 PYTHON_BIN := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
-.PHONY: setup data analysis sql purchase-model cohort report all clean
+.PHONY: setup data analysis sql purchase-model cohort seller-monitor report all clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -25,12 +25,16 @@ purchase-model:
 cohort:
 	$(PYTHON_BIN) src/cohort_repeat_analysis.py
 
+seller-monitor:
+	$(PYTHON_BIN) src/seller_monthly_risk_monitor.py
+
 report:
 	@printf "Main report: reports/final_report.md\n"
 	@printf "EDA findings: reports/eda_key_findings.md\n"
 	@printf "Model summary: reports/modeling_low_review_summary.md\n"
 	@printf "Purchase-time model: reports/purchase_time_model_summary.md\n"
 	@printf "Cohort analysis: reports/cohort_repeat_analysis_summary.md\n"
+	@printf "Seller monthly monitoring: reports/seller_monthly_monitoring_summary.md\n"
 	@printf "Additional analysis: reports/additional_analysis_summary.md\n"
 
 all: data analysis report

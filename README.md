@@ -14,6 +14,7 @@ The project covers the full analytics workflow:
 6. Seller, logistics, and model lift analysis
 7. Leakage-controlled purchase-time low-review risk modeling
 8. Cohort and observed repeat-purchase analysis
+9. Monthly seller risk monitoring and operational alerting
 
 Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
@@ -26,6 +27,7 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - After delivery, can a simple machine learning model rank orders by low-review risk?
 - How much low-review risk can be identified immediately after purchase without using delivery outcomes?
 - What does observed repeat-purchase behavior look like across cohorts and first-order experiences?
+- Which sellers show meaningful monthly risk deterioration, and which alerts carry the most commercial exposure?
 
 ## Key Findings
 
@@ -48,6 +50,9 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - The purchase-time model's top 10% risk segment captured 21.9% of low reviews, with 2.19x lift
 - Observed repeat-customer rate among customers with delivered orders was 3.0%
 - The 90-day repeat rate was 2.3%, and median time to a second delivered order was 29 days
+- In the latest complete monitoring month, 34 sellers were classified as critical and 49 as watch
+- Critical sellers represented 11.6% of monthly seller-order value and 14.3% of seller-orders
+- 44 sellers escalated from stable or watch status relative to the previous month
 
 ## Selected Visuals
 
@@ -75,9 +80,13 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 
 ![Observed Cohort Repeat-Purchase Activity](reports/figures/cohort_repeat_activity_heatmap.png)
 
+### Seller Monthly Risk Priority Matrix
+
+![Seller Monthly Risk Priority Matrix](reports/figures/seller_monthly_priority_matrix.png)
+
 ## Additional Analysis
 
-I added three focused analyses to make the project more useful for marketplace operations.
+I added four focused analyses to make the project more useful for marketplace operations.
 
 ### 1. Seller Performance Scorecard
 
@@ -85,7 +94,26 @@ I segmented sellers by marketplace value and customer experience risk. This help
 
 ![Seller Scorecard Value Risk](reports/figures/seller_scorecard_value_risk.png)
 
-### 2. Logistics Distance and Cross-State Analysis
+### 2. Seller Monthly Risk Monitoring
+
+I converted the static seller scorecard into a recurring monthly monitoring system. The monitor combines low-review, late-delivery, and cancellation risk with seller-level deterioration and commercial exposure.
+
+To reduce small-sample false alerts, the risk rates are smoothed toward the monthly marketplace rate. Sellers also need sufficient monthly order and review volume before they can receive a watch or critical alert.
+
+The priority score combines 55% experience risk, 25% deterioration, and 20% seller value, with a volume-based reliability adjustment. Critical alerts represent the top 10% of eligible sellers by priority score with an experience risk score of at least 60.
+
+Latest complete month, 2018-08:
+
+- Active sellers: 1,278
+- Sellers eligible for alerts: 343
+- Critical sellers: 34
+- Watch sellers: 49
+- Sellers escalated from stable or watch: 44
+- Critical sellers' share of monthly seller-order value: 11.6%
+
+![Seller Monthly Risk Status](reports/figures/seller_monthly_risk_status.png)
+
+### 3. Logistics Distance and Cross-State Analysis
 
 I used customer and seller zip-code prefix geolocation to estimate customer-seller distance and compare same-state versus cross-state routes.
 
@@ -100,7 +128,7 @@ Key result:
 
 ![Logistics Distance Delivery Review](reports/figures/logistics_distance_delivery_review.png)
 
-### 3. Model Lift and Gain Simulation
+### 4. Model Lift and Gain Simulation
 
 I translated the low-review model into a customer support prioritization view.
 
@@ -164,6 +192,21 @@ Because the dataset covers a limited observation window, I describe these result
 
 ![Monthly New vs Repeat Orders](reports/figures/monthly_new_vs_repeat_orders.png)
 
+## Seller Monthly Risk Monitoring
+
+The seller monitor creates a seller-month panel and assigns operational statuses using:
+
+- Smoothed low-review, late-delivery, and cancellation rates
+- Deterioration relative to the seller's prior history
+- Monthly seller-order value and order volume
+- Minimum evidence requirements before issuing an alert
+
+The score is intentionally transparent: 55% experience risk, 25% deterioration, and 20% seller value, followed by a volume-based reliability adjustment.
+
+The output is a prioritized watchlist with alert drivers and recommended actions. It is intended for seller operations and investigation, not automatic penalties.
+
+![Highest-Priority Seller Alerts](reports/figures/seller_monthly_top_alerts.png)
+
 ## Repository Structure
 
 ```text
@@ -181,13 +224,15 @@ Because the dataset covers a limited observation window, I describe these result
 │   ├── 05_modeling_low_review_risk.ipynb
 │   ├── 06_seller_logistics_lift_analysis.ipynb
 │   ├── 07_purchase_time_risk_model.ipynb
-│   └── 08_cohort_repeat_analysis.ipynb
+│   ├── 08_cohort_repeat_analysis.ipynb
+│   └── 09_seller_monthly_risk_monitor.ipynb
 ├── reports/
 │   ├── final_report.md
 │   ├── eda_key_findings.md
 │   ├── modeling_low_review_summary.md
 │   ├── purchase_time_model_summary.md
 │   ├── cohort_repeat_analysis_summary.md
+│   ├── seller_monthly_monitoring_summary.md
 │   ├── model_low_review_metrics.csv
 │   ├── model_low_review_feature_importance.csv
 │   ├── additional_analysis_summary.md
@@ -212,6 +257,7 @@ Because the dataset covers a limited observation window, I describe these result
 ├── src/
 │   ├── purchase_time_risk_model.py
 │   ├── cohort_repeat_analysis.py
+│   ├── seller_monthly_risk_monitor.py
 │   └── seller_logistics_lift_analysis.py
 └── README.md
 ```
@@ -270,6 +316,7 @@ make data
 make analysis
 make purchase-model
 make cohort
+make seller-monitor
 make report
 ```
 
@@ -288,6 +335,7 @@ The notebooks can also be run manually in this order:
 06_seller_logistics_lift_analysis.ipynb
 07_purchase_time_risk_model.ipynb
 08_cohort_repeat_analysis.ipynb
+09_seller_monthly_risk_monitor.ipynb
 ```
 
 The second notebook generates the processed analytical tables. The fourth notebook creates a local DuckDB database at `data/database/olist.duckdb`.
@@ -310,13 +358,14 @@ The SQL files answer reusable business questions:
 - The low-review model uses post-delivery features such as actual delivery days, so it is best suited for post-delivery recovery or operational review.
 - The purchase-time model avoids current-order delivery outcomes, but its seller-history features depend on historical events available in the dataset.
 - Repeat-purchase metrics are limited by the dataset observation window and should not be interpreted as true long-term retention.
+- Seller monitoring alerts use relative thresholds and smoothed historical data; they support investigation rather than proving seller fault.
 - `payment_total` includes both product value and freight, so I treat it as gross payment volume rather than merchandise-only GMV.
 - The analysis is observational and should not be interpreted as causal proof.
 
 ## Recommended Next Steps
 
 - Build a Streamlit or Power BI dashboard from `orders_analysis_base.csv`.
-- Add seller-level time-series monitoring.
 - Add intervention-cost and expected-value simulation for the risk models.
+- Validate seller alerts against additional complaint, refund, and seller-action data if available.
 - Add exact route or carrier-level features if operational data becomes available.
 - Move more repeated notebook logic into reusable Python modules under `src/`.

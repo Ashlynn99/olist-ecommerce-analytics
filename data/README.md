@@ -61,6 +61,12 @@ purchase_time_seller_history_features.csv
 customer_repeat_behavior_base.csv
 ```
 
+The seller monthly monitoring stage also creates:
+
+```text
+seller_monthly_risk_monitor.csv
+```
+
 ## DuckDB Database
 
 Run:
