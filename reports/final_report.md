@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, observed repeat-purchase behavior, seller risk, and low-review risk across the order lifecycle. The project combines Python data cleaning, business EDA, SQL analysis, customer cohort analysis, monthly seller monitoring, and two leakage-aware machine learning use cases.
+I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, observed repeat-purchase behavior, seller risk, and low-review risk across the order lifecycle. The project combines Python data cleaning, business EDA, SQL analysis, customer cohort analysis, monthly seller monitoring, two leakage-aware machine learning use cases, and intervention-value simulation.
 
 The main finding is that customer experience is closely related to delivery performance. Orders delivered more than 15 days late have a low-review rate of 78.9%, while the overall low-review rate is 14.7%. This makes delivery delay the clearest operational issue in the analysis.
 
@@ -249,6 +249,27 @@ Relevant figures:
 
 ![Seller Risk Status Transitions](figures/seller_risk_transition_matrix.png)
 
+## Intervention Cost and Expected-Value Simulation
+
+I translated the purchase-time and post-delivery risk rankings into intervention-capacity and value scenarios. The simulation uses historical low-review outcomes together with explicit assumptions for contact cost, intervention effectiveness, and the value of a successful recovery.
+
+Base-case results:
+
+| Strategy | Risk Coverage | Orders Contacted | Low Reviews Captured | Expected Net Value | Incremental Value vs Random | ROI |
+|---|---:|---:|---:|---:|---:|---:|
+| Purchase-time prevention | 5% | 2,624 | 13.4% | 2,759 BRL | 6,678 BRL | 35.1% |
+| Post-delivery recovery | 5% | 2,624 | 25.3% | 15,158 BRL | 37,421 BRL | 48.1% |
+
+The purchase-time scenario assumes a 3 BRL automated action with 15% effectiveness. The post-delivery scenario assumes a 12 BRL service-recovery action with 35% effectiveness. Both use 75 BRL as the assumed value of a successful recovery.
+
+The incremental-value comparison isolates the contribution of model ranking relative to randomly contacting the same number of orders. Conservative assumptions make both strategies unprofitable, so these values should guide pilot design rather than be presented as realized savings.
+
+Relevant figures:
+
+![Intervention Expected Net Value](figures/intervention_net_value_by_coverage.png)
+
+![Intervention Value Sensitivity](figures/intervention_value_sensitivity.png)
+
 ### Logistics Distance and Cross-State Delivery
 
 I estimated customer-seller distance using zip-code prefix geolocation and compared same-state versus cross-state routes.
@@ -312,6 +333,10 @@ Relevant figure:
 
    Use the 90-day observed repeat rate as a consistent monitoring metric and compare it across cohorts, categories, and first-order experiences.
 
+7. Pilot interventions before scaling.
+
+   Start with the highest-risk 5% of orders and use randomized treatment and control groups to estimate actual incremental recovery, cost per contact, and downstream customer value.
+
 ## Limitations
 
 - The dataset is historical and does not reflect current Olist operations.
@@ -320,6 +345,7 @@ Relevant figure:
 - The purchase-time model uses leakage-controlled historical seller outcomes, but data availability in a production system would need to be confirmed.
 - Repeat-purchase metrics are affected by the limited observation period and do not represent true long-term retention.
 - Seller monitoring alerts use relative thresholds and smoothed historical evidence; they support investigation rather than proving seller fault.
+- Intervention-value estimates depend on assumed effectiveness and recovery value; they are scenarios rather than realized causal impact.
 - `payment_total` includes freight, so gross payment volume should not be interpreted as merchandise-only GMV.
 - The dataset does not include customer demographics, marketing acquisition channels, or full seller operational history.
 

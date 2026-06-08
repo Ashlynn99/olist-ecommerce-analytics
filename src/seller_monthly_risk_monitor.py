@@ -414,6 +414,7 @@ def create_figures(
     transition_summary: pd.DataFrame,
     figures_dir: Path,
 ) -> None:
+    plt.style.use("default")
     summary_plot = monthly_summary.tail(18).copy()
     x = np.arange(len(summary_plot))
     fig, ax = plt.subplots(figsize=(13, 6))

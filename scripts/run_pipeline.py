@@ -30,6 +30,7 @@ NOTEBOOKS = [
     "notebooks/07_purchase_time_risk_model.ipynb",
     "notebooks/08_cohort_repeat_analysis.ipynb",
     "notebooks/09_seller_monthly_risk_monitor.ipynb",
+    "notebooks/10_intervention_value_simulation.ipynb",
 ]
 
 

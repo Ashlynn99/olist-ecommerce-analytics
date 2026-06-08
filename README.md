@@ -15,6 +15,7 @@ The project covers the full analytics workflow:
 7. Leakage-controlled purchase-time low-review risk modeling
 8. Cohort and observed repeat-purchase analysis
 9. Monthly seller risk monitoring and operational alerting
+10. Intervention cost, ROI, and expected-value simulation
 
 Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
@@ -28,6 +29,7 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - How much low-review risk can be identified immediately after purchase without using delivery outcomes?
 - What does observed repeat-purchase behavior look like across cohorts and first-order experiences?
 - Which sellers show meaningful monthly risk deterioration, and which alerts carry the most commercial exposure?
+- Under different costs and intervention effects, how much model-ranked outreach is economically justified?
 
 ## Key Findings
 
@@ -53,6 +55,9 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - In the latest complete monitoring month, 34 sellers were classified as critical and 49 as watch
 - Critical sellers represented 11.6% of monthly seller-order value and 14.3% of seller-orders
 - 44 sellers escalated from stable or watch status relative to the previous month
+- Under the base intervention assumptions, both strategies maximize expected net value at the highest-risk 5% of test orders
+- Purchase-time prevention produced an estimated 2,759 BRL net value, while post-delivery recovery produced 15,158 BRL
+- Compared with random selection at the same contact volume, model ranking added an estimated 6,678 BRL and 37,421 BRL respectively
 
 ## Selected Visuals
 
@@ -83,6 +88,10 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 ### Seller Monthly Risk Priority Matrix
 
 ![Seller Monthly Risk Priority Matrix](reports/figures/seller_monthly_priority_matrix.png)
+
+### Intervention Expected Net Value
+
+![Intervention Expected Net Value](reports/figures/intervention_net_value_by_coverage.png)
 
 ## Additional Analysis
 
@@ -207,6 +216,28 @@ The output is a prioritized watchlist with alert drivers and recommended actions
 
 ![Highest-Priority Seller Alerts](reports/figures/seller_monthly_top_alerts.png)
 
+## Intervention Cost and Expected Value
+
+I translated both risk rankings into retrospective intervention scenarios.
+
+Base assumptions:
+
+| Strategy | Cost per Contact | Assumed Effectiveness | Value per Successful Recovery |
+|---|---:|---:|---:|
+| Purchase-time prevention | 3 BRL | 15% | 75 BRL |
+| Post-delivery recovery | 12 BRL | 35% | 75 BRL |
+
+Under these assumptions, the highest-risk 5% segment maximized expected net value for both strategies:
+
+| Strategy | Orders Contacted | Low Reviews Captured | Expected Net Value | Incremental Value vs Random | ROI |
+|---|---:|---:|---:|---:|---:|
+| Purchase-time prevention | 2,624 | 13.4% | 2,759 BRL | 6,678 BRL | 35.1% |
+| Post-delivery recovery | 2,624 | 25.3% | 15,158 BRL | 37,421 BRL | 48.1% |
+
+These are scenario estimates, not realized savings. The sensitivity analysis shows that conservative assumptions make both strategies unprofitable, supporting a randomized pilot before rollout.
+
+![Intervention Value Sensitivity](reports/figures/intervention_value_sensitivity.png)
+
 ## Repository Structure
 
 ```text
@@ -225,7 +256,8 @@ The output is a prioritized watchlist with alert drivers and recommended actions
 │   ├── 06_seller_logistics_lift_analysis.ipynb
 │   ├── 07_purchase_time_risk_model.ipynb
 │   ├── 08_cohort_repeat_analysis.ipynb
-│   └── 09_seller_monthly_risk_monitor.ipynb
+│   ├── 09_seller_monthly_risk_monitor.ipynb
+│   └── 10_intervention_value_simulation.ipynb
 ├── reports/
 │   ├── final_report.md
 │   ├── eda_key_findings.md
@@ -233,6 +265,7 @@ The output is a prioritized watchlist with alert drivers and recommended actions
 │   ├── purchase_time_model_summary.md
 │   ├── cohort_repeat_analysis_summary.md
 │   ├── seller_monthly_monitoring_summary.md
+│   ├── intervention_value_summary.md
 │   ├── model_low_review_metrics.csv
 │   ├── model_low_review_feature_importance.csv
 │   ├── additional_analysis_summary.md
@@ -258,6 +291,7 @@ The output is a prioritized watchlist with alert drivers and recommended actions
 │   ├── purchase_time_risk_model.py
 │   ├── cohort_repeat_analysis.py
 │   ├── seller_monthly_risk_monitor.py
+│   ├── intervention_value_simulation.py
 │   └── seller_logistics_lift_analysis.py
 └── README.md
 ```
@@ -317,6 +351,7 @@ make analysis
 make purchase-model
 make cohort
 make seller-monitor
+make intervention-value
 make report
 ```
 
@@ -336,6 +371,7 @@ The notebooks can also be run manually in this order:
 07_purchase_time_risk_model.ipynb
 08_cohort_repeat_analysis.ipynb
 09_seller_monthly_risk_monitor.ipynb
+10_intervention_value_simulation.ipynb
 ```
 
 The second notebook generates the processed analytical tables. The fourth notebook creates a local DuckDB database at `data/database/olist.duckdb`.
@@ -359,13 +395,14 @@ The SQL files answer reusable business questions:
 - The purchase-time model avoids current-order delivery outcomes, but its seller-history features depend on historical events available in the dataset.
 - Repeat-purchase metrics are limited by the dataset observation window and should not be interpreted as true long-term retention.
 - Seller monitoring alerts use relative thresholds and smoothed historical data; they support investigation rather than proving seller fault.
+- Intervention value depends on assumed action cost, effectiveness, and recovery value; it should be validated through a controlled pilot.
 - `payment_total` includes both product value and freight, so I treat it as gross payment volume rather than merchandise-only GMV.
 - The analysis is observational and should not be interpreted as causal proof.
 
 ## Recommended Next Steps
 
 - Build a Streamlit or Power BI dashboard from `orders_analysis_base.csv`.
-- Add intervention-cost and expected-value simulation for the risk models.
+- Run randomized intervention pilots and replace scenario assumptions with observed incremental impact.
 - Validate seller alerts against additional complaint, refund, and seller-action data if available.
 - Add exact route or carrier-level features if operational data becomes available.
 - Move more repeated notebook logic into reusable Python modules under `src/`.
