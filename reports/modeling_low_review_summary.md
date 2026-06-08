@@ -27,4 +27,4 @@ The model excludes review text, review score, review count, and any field derive
 
 I treat the model as a post-delivery risk-ranking tool rather than an automated decision system. It can help prioritize delivered orders for customer support follow-up or operational review.
 
-A useful next improvement would be to compare two versions of the model: one available at purchase time and one available after delivery. That would separate prevention use cases from post-delivery recovery use cases.
+The project also includes a separate purchase-time model that excludes current-order delivery outcomes. Comparing the two models separates prevention use cases from post-delivery recovery use cases and makes the cost of earlier prediction explicit.

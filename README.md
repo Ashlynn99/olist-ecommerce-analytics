@@ -1,8 +1,8 @@
-# Olist E-Commerce Analytics and Post-Delivery Low-Review Risk Ranking
+# Olist E-Commerce Analytics, Customer Lifecycle, and Risk Modeling
 
 ## Project Overview
 
-I built this project to analyze the Brazilian Olist e-commerce marketplace dataset from a business and operations perspective. The goal was to understand marketplace growth, delivery performance, customer satisfaction, and whether delivered orders can be ranked by low-review risk for service recovery and operational review.
+I built this project to analyze the Brazilian Olist e-commerce marketplace dataset from a business, customer-lifecycle, and operations perspective. The goal was to understand marketplace growth, delivery performance, observed repeat-purchase behavior, and how low-review risk can be ranked at different stages of the order lifecycle.
 
 The project covers the full analytics workflow:
 
@@ -12,6 +12,8 @@ The project covers the full analytics workflow:
 4. SQL analytics using DuckDB
 5. Post-delivery low-review risk modeling
 6. Seller, logistics, and model lift analysis
+7. Leakage-controlled purchase-time low-review risk modeling
+8. Cohort and observed repeat-purchase analysis
 
 Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
@@ -22,6 +24,8 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - How does delivery performance relate to customer review scores?
 - Which order segments have the highest risk of receiving low reviews?
 - After delivery, can a simple machine learning model rank orders by low-review risk?
+- How much low-review risk can be identified immediately after purchase without using delivery outcomes?
+- What does observed repeat-purchase behavior look like across cohorts and first-order experiences?
 
 ## Key Findings
 
@@ -40,6 +44,10 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 - Cross-state seller-orders averaged 15.0 delivery days versus 7.9 days for same-state seller-orders
 - The top 10% highest-risk orders identified by the model captured 41.7% of all low reviews in the test period
 - 35 sellers were classified as high-value / high-risk, covering 9,890 associated orders
+- The purchase-time model achieved 0.640 ROC-AUC and 0.240 PR-AUC without using current-order delivery outcomes
+- The purchase-time model's top 10% risk segment captured 21.9% of low reviews, with 2.19x lift
+- Observed repeat-customer rate among customers with delivered orders was 3.0%
+- The 90-day repeat rate was 2.3%, and median time to a second delivered order was 29 days
 
 ## Selected Visuals
 
@@ -58,6 +66,14 @@ Data source: [Olist Brazilian E-Commerce Public Dataset on Kaggle](https://www.k
 ### Low Review Risk Ranking ROC Curve
 
 ![Low Review Model ROC Curve](reports/figures/model_low_review_roc_curve.png)
+
+### Purchase-Time Model Cumulative Gain
+
+![Purchase-Time Model Cumulative Gain](reports/figures/purchase_time_model_cumulative_gain.png)
+
+### Observed Cohort Repeat-Purchase Activity
+
+![Observed Cohort Repeat-Purchase Activity](reports/figures/cohort_repeat_activity_heatmap.png)
 
 ## Additional Analysis
 
@@ -116,6 +132,38 @@ Important boundary: the feature set includes post-delivery information such as a
 
 The lift analysis makes the model easier to discuss in business terms: reviewing only the top 10% highest-risk orders would cover 41.7% of low reviews in the test set.
 
+## Purchase-Time Risk Model
+
+I built a second model for earlier intervention using only features available at or before purchase time.
+
+The model excludes current-order delivery outcomes and review information. Seller-history features are calculated as-of each order timestamp and only include seller delivery or review events observed before the current purchase.
+
+| Model | ROC-AUC | PR-AUC | Top 10% Capture | Top 10% Lift |
+|---|---:|---:|---:|---:|
+| Purchase-time logistic regression | 0.640 | 0.240 | 21.9% | 2.19x |
+| Post-delivery logistic regression | 0.763 | 0.446 | 41.7% | 4.17x |
+
+This comparison quantifies the trade-off between earlier intervention and predictive strength. The purchase-time model is weaker, but it can support preventive monitoring before delivery outcomes are known.
+
+![Purchase-Time Model ROC and PR Curves](reports/figures/purchase_time_model_roc_pr.png)
+
+## Cohort and Observed Repeat Behavior
+
+I used `customer_unique_id` and delivered orders to add a customer-lifecycle view.
+
+Key results:
+
+- Customers with delivered orders: 93,358
+- Observed repeat customers: 2,801
+- Observed repeat-customer rate: 3.0%
+- Customers eligible for a fixed 90-day repeat window: 75,320
+- 90-day repeat rate: 2.3%
+- Median time to second delivered order: 29 days
+
+Because the dataset covers a limited observation window, I describe these results as **observed repeat behavior**, not true long-term retention. The 90-day metric only includes customers with sufficient follow-up time.
+
+![Monthly New vs Repeat Orders](reports/figures/monthly_new_vs_repeat_orders.png)
+
 ## Repository Structure
 
 ```text
@@ -131,11 +179,15 @@ The lift analysis makes the model easier to discuss in business terms: reviewing
 │   ├── 03_eda_business_analysis.ipynb
 │   ├── 04_sql_business_analysis.ipynb
 │   ├── 05_modeling_low_review_risk.ipynb
-│   └── 06_seller_logistics_lift_analysis.ipynb
+│   ├── 06_seller_logistics_lift_analysis.ipynb
+│   ├── 07_purchase_time_risk_model.ipynb
+│   └── 08_cohort_repeat_analysis.ipynb
 ├── reports/
 │   ├── final_report.md
 │   ├── eda_key_findings.md
 │   ├── modeling_low_review_summary.md
+│   ├── purchase_time_model_summary.md
+│   ├── cohort_repeat_analysis_summary.md
 │   ├── model_low_review_metrics.csv
 │   ├── model_low_review_feature_importance.csv
 │   ├── additional_analysis_summary.md
@@ -158,6 +210,8 @@ The lift analysis makes the model easier to discuss in business terms: reviewing
 ├── Makefile
 ├── LICENSE
 ├── src/
+│   ├── purchase_time_risk_model.py
+│   ├── cohort_repeat_analysis.py
 │   └── seller_logistics_lift_analysis.py
 └── README.md
 ```
@@ -214,6 +268,8 @@ The project includes a small Makefile so the main workflow can be checked and ex
 make setup
 make data
 make analysis
+make purchase-model
+make cohort
 make report
 ```
 
@@ -230,6 +286,8 @@ The notebooks can also be run manually in this order:
 04_sql_business_analysis.ipynb
 05_modeling_low_review_risk.ipynb
 06_seller_logistics_lift_analysis.ipynb
+07_purchase_time_risk_model.ipynb
+08_cohort_repeat_analysis.ipynb
 ```
 
 The second notebook generates the processed analytical tables. The fourth notebook creates a local DuckDB database at `data/database/olist.duckdb`.
@@ -250,15 +308,15 @@ The SQL files answer reusable business questions:
 
 - The dataset is historical and covers 2016 to 2018.
 - The low-review model uses post-delivery features such as actual delivery days, so it is best suited for post-delivery recovery or operational review.
-- A purchase-time risk model would require a separate feature set excluding actual delivery outcomes.
+- The purchase-time model avoids current-order delivery outcomes, but its seller-history features depend on historical events available in the dataset.
+- Repeat-purchase metrics are limited by the dataset observation window and should not be interpreted as true long-term retention.
 - `payment_total` includes both product value and freight, so I treat it as gross payment volume rather than merchandise-only GMV.
 - The analysis is observational and should not be interpreted as causal proof.
 
 ## Recommended Next Steps
 
 - Build a Streamlit or Power BI dashboard from `orders_analysis_base.csv`.
-- Build a separate purchase-time version of the low-review risk model.
-- Add cohort analysis or repeat-customer behavior proxies to strengthen the growth analysis.
 - Add seller-level time-series monitoring.
+- Add intervention-cost and expected-value simulation for the risk models.
 - Add exact route or carrier-level features if operational data becomes available.
 - Move more repeated notebook logic into reusable Python modules under `src/`.

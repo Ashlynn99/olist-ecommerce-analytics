@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, and post-delivery low-review risk. The project combines Python data cleaning, business EDA, SQL analysis, and a simple machine learning model.
+I analyzed Olist's Brazilian e-commerce marketplace data from 2016 to 2018 to understand growth, delivery performance, customer satisfaction, observed repeat-purchase behavior, and low-review risk across the order lifecycle. The project combines Python data cleaning, business EDA, SQL analysis, customer cohort analysis, and two leakage-aware machine learning use cases.
 
 The main finding is that customer experience is closely related to delivery performance. Orders delivered more than 15 days late have a low-review rate of 78.9%, while the overall low-review rate is 14.7%. This makes delivery delay the clearest operational issue in the analysis.
 
@@ -156,6 +156,52 @@ Relevant figures:
 
 ![Model Precision Recall Curve](figures/model_low_review_precision_recall_curve.png)
 
+## Purchase-Time Low-Review Risk Model
+
+I built a second model for early risk triage using only information available at or before purchase time.
+
+Current-order delivery outcomes and review information are excluded. Seller-history features are calculated as-of each purchase timestamp and only use seller delivery or review events observed before the current order.
+
+Model comparison:
+
+| Model | ROC-AUC | PR-AUC | Top 10% Capture | Top 10% Lift |
+|---|---:|---:|---:|---:|
+| Purchase-time logistic regression | 0.640 | 0.240 | 21.9% | 2.19x |
+| Post-delivery logistic regression | 0.763 | 0.446 | 41.7% | 4.17x |
+
+The purchase-time model provides weaker ranking performance, but it supports preventive monitoring before delivery outcomes are known. This makes the two models complementary rather than interchangeable.
+
+Relevant figures:
+
+![Purchase-Time Model ROC and PR Curves](figures/purchase_time_model_roc_pr.png)
+
+![Purchase-Time Model Cumulative Gain](figures/purchase_time_model_cumulative_gain.png)
+
+## Cohort and Observed Repeat-Purchase Analysis
+
+I used `customer_unique_id` and delivered orders to examine customer lifecycle behavior.
+
+Key results:
+
+| Metric | Value |
+|---|---:|
+| Customers with delivered orders | 93,358 |
+| Observed repeat customers | 2,801 |
+| Observed repeat-customer rate | 3.0% |
+| Customers eligible for 90-day analysis | 75,320 |
+| 90-day repeat rate | 2.3% |
+| Median days to second delivered order | 29 |
+
+The dataset covers a limited historical window, so these figures represent observed repeat behavior rather than true long-term retention. The primary 90-day comparison reduces right-censoring by excluding customers without sufficient follow-up time.
+
+First-order experience comparisons were descriptive rather than causal. The 90-day repeat rate was 2.3% after an on-time first order and 2.1% after a late first order. Customers with a first-order low review did not show a simple lower 90-day repeat rate, highlighting the importance of avoiding unsupported causal claims.
+
+Relevant figures:
+
+![Observed Cohort Repeat-Purchase Activity](figures/cohort_repeat_activity_heatmap.png)
+
+![Monthly New vs Repeat Orders](figures/monthly_new_vs_repeat_orders.png)
+
 ## Additional Analysis
 
 I added three focused extensions to make the project more practical without making the workflow unnecessarily complex.
@@ -232,13 +278,19 @@ Relevant figure:
 
 5. Separate purchase-time and post-delivery models.
 
-   The current model includes post-delivery information. A stronger roadmap would build two models: one for prevention at purchase time and another for service recovery after delivery.
+   Use the purchase-time model for preventive monitoring and the post-delivery model for service-recovery prioritization. Their different performance levels reflect different information availability.
+
+6. Track customer lifecycle metrics with fixed observation windows.
+
+   Use the 90-day observed repeat rate as a consistent monitoring metric and compare it across cohorts, categories, and first-order experiences.
 
 ## Limitations
 
 - The dataset is historical and does not reflect current Olist operations.
 - The analysis is observational and does not prove causality.
 - Some features are only available after delivery, so the current model is not a pure purchase-time prediction system.
+- The purchase-time model uses leakage-controlled historical seller outcomes, but data availability in a production system would need to be confirmed.
+- Repeat-purchase metrics are affected by the limited observation period and do not represent true long-term retention.
 - `payment_total` includes freight, so gross payment volume should not be interpreted as merchandise-only GMV.
 - The dataset does not include customer demographics, marketing acquisition channels, or full seller operational history.
 

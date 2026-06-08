@@ -54,6 +54,13 @@ The seller, logistics, and lift analysis notebook also creates:
 seller_order_base.csv
 ```
 
+The purchase-time model and cohort analysis also create:
+
+```text
+purchase_time_seller_history_features.csv
+customer_repeat_behavior_base.csv
+```
+
 ## DuckDB Database
 
 Run:

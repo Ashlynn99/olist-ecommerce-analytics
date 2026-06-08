@@ -12,9 +12,13 @@ from pathlib import Path
 import nbformat
 
 warnings.filterwarnings("ignore", message="FigureCanvasAgg is non-interactive.*")
+warnings.filterwarnings("ignore", message="More than 20 figures have been opened.*")
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MATPLOTLIB_CACHE_DIR = PROJECT_ROOT / ".matplotlib_cache"
+MATPLOTLIB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(MATPLOTLIB_CACHE_DIR))
 
 NOTEBOOKS = [
     "notebooks/01_data_understanding.ipynb",
@@ -23,7 +27,14 @@ NOTEBOOKS = [
     "notebooks/04_sql_business_analysis.ipynb",
     "notebooks/05_modeling_low_review_risk.ipynb",
     "notebooks/06_seller_logistics_lift_analysis.ipynb",
+    "notebooks/07_purchase_time_risk_model.ipynb",
+    "notebooks/08_cohort_repeat_analysis.ipynb",
 ]
+
+
+def display(*objects: object) -> None:
+    for obj in objects:
+        print(obj)
 
 
 def run_command(command: list[str]) -> None:
@@ -33,7 +44,7 @@ def run_command(command: list[str]) -> None:
 
 def execute_notebook_direct(notebook_path: Path) -> None:
     notebook = nbformat.read(notebook_path, as_version=4)
-    namespace = {"__name__": "__main__"}
+    namespace = {"__name__": "__main__", "display": display}
 
     print(f"Executing {notebook_path}")
     for cell_index, cell in enumerate(notebook.cells, start=1):
@@ -49,6 +60,13 @@ def execute_notebook_direct(notebook_path: Path) -> None:
         except Exception as exc:
             print(f"Notebook execution failed: {notebook_path}, cell {cell_index}")
             raise exc
+
+    try:
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+    except ImportError:
+        pass
 
 
 def parse_args() -> argparse.Namespace:

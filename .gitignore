@@ -10,3 +10,4 @@ data/database/
 reports/seller_order_distance_base.csv
 reports/model_low_review_test_predictions.csv
 reports/model_low_review_cumulative_gain.csv
+reports/purchase_time_model_test_predictions.csv

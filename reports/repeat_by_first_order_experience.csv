@@ -1,0 +1,5 @@
+eligible_customers_90d,repeat_customers_within_90d,repeat_rate_within_90d,observed_repeat_rate,experience_dimension,experience_group
+68712,1578,0.02296542088718128,0.035263127255792295,First order late,No
+6608,136,0.020581113801452784,0.02799636803874092,First order late,Yes
+64613,1455,0.02251868818968319,0.03488462074195595,First order low review,No
+10174,247,0.02427757027717712,0.03292706899941026,First order low review,Yes
