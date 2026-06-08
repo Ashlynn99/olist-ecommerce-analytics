@@ -3,7 +3,7 @@ VENV ?= .venv
 PYTHON_BIN := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
-.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value report all clean
+.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value dashboard report all clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -30,6 +30,9 @@ seller-monitor:
 
 intervention-value:
 	$(PYTHON_BIN) src/intervention_value_simulation.py
+
+dashboard:
+	$(PYTHON_BIN) -m streamlit run dashboard/app.py
 
 report:
 	@printf "Main report: reports/final_report.md\n"

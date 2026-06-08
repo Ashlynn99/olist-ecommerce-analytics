@@ -307,6 +307,21 @@ Relevant figure:
 
 ![Low Review Cumulative Gain](figures/model_low_review_cumulative_gain.png)
 
+## Operational Dashboard
+
+I packaged the main analytical outputs into a four-view Streamlit dashboard so that the project can be used as an operating tool rather than only read as a report:
+
+- **Executive KPI Overview:** marketplace scale, payment volume, delivery performance, and customer-experience risk.
+- **Seller Risk Monitoring:** monthly alert volumes, risk transitions, and a prioritized seller watchlist.
+- **Purchase-Time Risk Triage:** leakage-controlled model performance and an order-level risk queue for preventive action.
+- **Intervention ROI Simulator:** adjustable contact cost, effectiveness, recovery value, and coverage assumptions.
+
+Run the dashboard after generating the analysis outputs:
+
+```bash
+make dashboard
+```
+
 ## Business Recommendations
 
 1. Prioritize extreme delivery delay prevention.
