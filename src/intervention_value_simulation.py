@@ -18,7 +18,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 COVERAGE_LEVELS = [0.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.50, 1.00]
 VALUE_PER_SUCCESSFUL_RECOVERY = 75.0
 BASE_STRATEGIES = {
@@ -56,7 +55,9 @@ def load_predictions(reports_dir: Path) -> dict[str, pd.DataFrame]:
     post = predictions["post_delivery"]
 
     if len(purchase) != len(post):
-        raise ValueError("Purchase-time and post-delivery prediction files have different row counts.")
+        raise ValueError(
+            "Purchase-time and post-delivery prediction files have different row counts."
+        )
 
     comparison = purchase[["order_id", "target_low_review"]].merge(
         post[["order_id", "target_low_review"]],
@@ -67,9 +68,7 @@ def load_predictions(reports_dir: Path) -> dict[str, pd.DataFrame]:
     )
     if not comparison["_merge"].eq("both").all():
         raise ValueError("The two prediction files do not cover the same orders.")
-    if not comparison["target_low_review_purchase"].eq(
-        comparison["target_low_review_post"]
-    ).all():
+    if not comparison["target_low_review_purchase"].eq(comparison["target_low_review_post"]).all():
         raise ValueError("Target labels differ between prediction files.")
 
     return predictions
@@ -101,9 +100,7 @@ def simulate_strategy(
         expected_roi = expected_net_value / intervention_cost if intervention_cost else np.nan
         random_expected_low_reviews = contacts * baseline_rate
         random_expected_net_value = (
-            random_expected_low_reviews
-            * intervention_effectiveness
-            * value_per_successful_recovery
+            random_expected_low_reviews * intervention_effectiveness * value_per_successful_recovery
             - intervention_cost
         )
         break_even_effectiveness = (
@@ -172,8 +169,7 @@ def create_scenario_simulation(predictions: dict[str, pd.DataFrame]) -> pd.DataF
                 intervention_effectiveness=min(
                     1.0, config["intervention_effectiveness"] * multiplier["effectiveness"]
                 ),
-                value_per_successful_recovery=VALUE_PER_SUCCESSFUL_RECOVERY
-                * multiplier["value"],
+                value_per_successful_recovery=VALUE_PER_SUCCESSFUL_RECOVERY * multiplier["value"],
             )
             simulated.insert(1, "scenario", scenario)
             frames.append(simulated)
@@ -198,9 +194,7 @@ def create_sensitivity_table(
         for cost_per_contact in [2.0, 5.0, 10.0, 15.0, 20.0]:
             for effectiveness in [0.10, 0.20, 0.30, 0.40, 0.50]:
                 cost = contacts * cost_per_contact
-                benefit = (
-                    observed_low_reviews * effectiveness * VALUE_PER_SUCCESSFUL_RECOVERY
-                )
+                benefit = observed_low_reviews * effectiveness * VALUE_PER_SUCCESSFUL_RECOVERY
                 net_value = benefit - cost
                 rows.append(
                     {
@@ -297,7 +291,9 @@ def create_figures(
     ax.set_xticklabels(["1%", "2%", "5%", "10%", "20%", "30%", "50%", "100%"])
     ax.legend()
     plt.tight_layout()
-    plt.savefig(figures_dir / "intervention_net_value_by_coverage.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "intervention_net_value_by_coverage.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
     scenario_best = scenario_simulation.loc[
@@ -396,7 +392,9 @@ def create_figures(
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
     plt.tight_layout()
-    plt.savefig(figures_dir / "intervention_recommended_strategies.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "intervention_recommended_strategies.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
 
@@ -406,43 +404,94 @@ def write_summary(
 ) -> None:
     purchase = recommendations[recommendations["strategy"].eq("purchase_time")].iloc[0]
     post = recommendations[recommendations["strategy"].eq("post_delivery")].iloc[0]
+    purchase_config = BASE_STRATEGIES["purchase_time"]
+    post_config = BASE_STRATEGIES["post_delivery"]
+
+    assumption_rows = "\n".join(
+        [
+            (
+                f"| Purchase-time prevention | {purchase_config['cost_per_contact']:.0f} BRL | "
+                f"{purchase_config['intervention_effectiveness']:.0%} | "
+                f"{VALUE_PER_SUCCESSFUL_RECOVERY:.0f} BRL |"
+            ),
+            (
+                f"| Post-delivery recovery | {post_config['cost_per_contact']:.0f} BRL | "
+                f"{post_config['intervention_effectiveness']:.0%} | "
+                f"{VALUE_PER_SUCCESSFUL_RECOVERY:.0f} BRL |"
+            ),
+        ]
+    )
+    recommendation_rows = "\n".join(
+        [
+            (
+                f"| Purchase-time prevention | {purchase['recommended_coverage_share']:.0%} | "
+                f"{int(purchase['orders_contacted']):,} | "
+                f"{purchase['low_reviews_captured_share']:.1%} | "
+                f"{purchase['base_expected_net_value_brl']:,.0f} BRL | "
+                f"{purchase['incremental_net_value_vs_random_brl']:,.0f} BRL | "
+                f"{purchase['base_expected_roi']:.1%} | "
+                f"{purchase['break_even_effectiveness']:.1%} |"
+            ),
+            (
+                f"| Post-delivery recovery | {post['recommended_coverage_share']:.0%} | "
+                f"{int(post['orders_contacted']):,} | "
+                f"{post['low_reviews_captured_share']:.1%} | "
+                f"{post['base_expected_net_value_brl']:,.0f} BRL | "
+                f"{post['incremental_net_value_vs_random_brl']:,.0f} BRL | "
+                f"{post['base_expected_roi']:.1%} | "
+                f"{post['break_even_effectiveness']:.1%} |"
+            ),
+        ]
+    )
 
     summary = f"""# Intervention Cost and Expected-Value Simulation
 
 ## Objective
 
-I translated the purchase-time and post-delivery low-review risk rankings into intervention-capacity and value scenarios.
+I translated the purchase-time and post-delivery low-review risk rankings into
+intervention-capacity and value scenarios.
 
-This is a retrospective scenario simulation, not a measured causal impact study. The model identifies historical low-review risk, while intervention effectiveness and recovery value are explicit assumptions that should be validated through a controlled experiment.
+This is a retrospective scenario simulation, not a measured causal impact study. The model
+identifies historical low-review risk, while intervention effectiveness and recovery value are
+explicit assumptions that should be validated through a controlled experiment.
 
 ## Base-Case Assumptions
 
 | Strategy | Cost per Contact | Assumed Effectiveness | Value per Successful Recovery |
 |---|---:|---:|---:|
-| Purchase-time prevention | {BASE_STRATEGIES['purchase_time']['cost_per_contact']:.0f} BRL | {BASE_STRATEGIES['purchase_time']['intervention_effectiveness']:.0%} | {VALUE_PER_SUCCESSFUL_RECOVERY:.0f} BRL |
-| Post-delivery recovery | {BASE_STRATEGIES['post_delivery']['cost_per_contact']:.0f} BRL | {BASE_STRATEGIES['post_delivery']['intervention_effectiveness']:.0%} | {VALUE_PER_SUCCESSFUL_RECOVERY:.0f} BRL |
+{assumption_rows}
 
-The purchase-time action represents a lower-cost automated communication or operational escalation. The post-delivery action represents a higher-cost human support or service-recovery workflow.
+The purchase-time action represents a lower-cost automated communication or operational escalation.
+The post-delivery action represents a higher-cost human support or service-recovery workflow.
 
 ## Recommended Base-Case Strategies
 
 | Strategy | Risk Coverage | Orders Contacted | Low Reviews Captured | Expected Net Value | Incremental Value vs Random | ROI | Break-Even Effectiveness |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Purchase-time prevention | {purchase['recommended_coverage_share']:.0%} | {int(purchase['orders_contacted']):,} | {purchase['low_reviews_captured_share']:.1%} | {purchase['base_expected_net_value_brl']:,.0f} BRL | {purchase['incremental_net_value_vs_random_brl']:,.0f} BRL | {purchase['base_expected_roi']:.1%} | {purchase['break_even_effectiveness']:.1%} |
-| Post-delivery recovery | {post['recommended_coverage_share']:.0%} | {int(post['orders_contacted']):,} | {post['low_reviews_captured_share']:.1%} | {post['base_expected_net_value_brl']:,.0f} BRL | {post['incremental_net_value_vs_random_brl']:,.0f} BRL | {post['base_expected_roi']:.1%} | {post['break_even_effectiveness']:.1%} |
+{recommendation_rows}
 
 ## Interpretation
 
-- The recommended coverage is the tested risk segment with the highest expected net value under the base assumptions.
-- Incremental value versus random isolates the benefit of using the model ranking instead of contacting the same number of randomly selected orders.
-- Purchase-time prevention is cheaper and can act earlier, but the model's lower precision limits the economically attractive coverage range.
-- Post-delivery recovery is more expensive per order, but its stronger risk concentration supports higher expected net value.
-- The sensitivity analysis shows when either strategy becomes unprofitable as cost rises or effectiveness falls.
-- Under the conservative assumptions, neither tested strategy produces positive net value; the economically appropriate decision would be not to launch until assumptions improve or a pilot demonstrates stronger effects.
+- The recommended coverage is the tested risk segment with the highest expected net value under the
+  base assumptions.
+- Incremental value versus random isolates the benefit of using the model ranking instead of
+  contacting the same number of randomly selected orders.
+- Purchase-time prevention is cheaper and can act earlier, but the model's lower precision limits
+  the economically attractive coverage range.
+- Post-delivery recovery is more expensive per order, but its stronger risk concentration supports
+  higher expected net value.
+- The sensitivity analysis shows when either strategy becomes unprofitable as cost rises or
+  effectiveness falls.
+- Under the conservative assumptions, neither tested strategy produces positive net value; the
+  economically appropriate decision would be not to launch until assumptions improve or a pilot
+  demonstrates stronger effects.
 
 ## Decision Boundary
 
-These values should not be presented as realized savings. A production decision should begin with a randomized pilot that measures actual intervention effectiveness, customer response, cost per contact, and longer-term customer value. The scenario model can then be updated with experimentally observed parameters.
+These values should not be presented as realized savings. A production decision should begin with a
+randomized pilot that measures actual intervention effectiveness, customer response, cost per
+contact, and longer-term customer value. The scenario model can then be updated with experimentally
+observed parameters.
 """
     (reports_dir / "intervention_value_summary.md").write_text(summary, encoding="utf-8")
 
@@ -463,9 +512,7 @@ def main() -> None:
     sensitivity.to_csv(reports_dir / "intervention_value_sensitivity.csv", index=False)
     recommendations.to_csv(reports_dir / "intervention_strategy_recommendations.csv", index=False)
 
-    create_figures(
-        base_simulation, scenario_simulation, sensitivity, recommendations, figures_dir
-    )
+    create_figures(base_simulation, scenario_simulation, sensitivity, recommendations, figures_dir)
     write_summary(recommendations, reports_dir)
 
     print("Intervention cost and expected-value simulation completed.")

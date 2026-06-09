@@ -18,17 +18,20 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 REPEAT_WINDOW_DAYS = 90
 
 
 def coerce_bool(series: pd.Series) -> pd.Series:
-    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype("boolean")
+    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype(
+        "boolean"
+    )
 
 
 def load_orders(project_root: Path) -> pd.DataFrame:
     orders = pd.read_csv(project_root / "data" / "processed" / "orders_analysis_base.csv")
-    orders["order_purchase_timestamp"] = pd.to_datetime(orders["order_purchase_timestamp"], errors="coerce")
+    orders["order_purchase_timestamp"] = pd.to_datetime(
+        orders["order_purchase_timestamp"], errors="coerce"
+    )
     for col in ["is_delivered", "is_late", "is_low_review"]:
         orders[col] = coerce_bool(orders[col])
     return orders
@@ -40,7 +43,9 @@ def prepare_delivered_orders(orders: pd.DataFrame) -> pd.DataFrame:
         & orders["customer_unique_id"].notna()
         & orders["order_purchase_timestamp"].notna()
     ].copy()
-    delivered = delivered.sort_values(["customer_unique_id", "order_purchase_timestamp", "order_id"])
+    delivered = delivered.sort_values(
+        ["customer_unique_id", "order_purchase_timestamp", "order_id"]
+    )
     delivered["customer_order_number"] = delivered.groupby("customer_unique_id").cumcount() + 1
     delivered["is_repeat_order"] = delivered["customer_order_number"].gt(1)
     delivered["order_month_period"] = delivered["order_purchase_timestamp"].dt.to_period("M")
@@ -73,10 +78,13 @@ def build_customer_summary(delivered: pd.DataFrame) -> pd.DataFrame:
         }
     )
 
-    second_orders = delivered.loc[delivered["customer_order_number"].eq(2), [
-        "customer_unique_id",
-        "order_purchase_timestamp",
-    ]].rename(columns={"order_purchase_timestamp": "second_purchase_timestamp"})
+    second_orders = delivered.loc[
+        delivered["customer_order_number"].eq(2),
+        [
+            "customer_unique_id",
+            "order_purchase_timestamp",
+        ],
+    ].rename(columns={"order_purchase_timestamp": "second_purchase_timestamp"})
 
     customer_summary = (
         delivered.groupby("customer_unique_id", as_index=False)
@@ -98,12 +106,11 @@ def build_customer_summary(delivered: pd.DataFrame) -> pd.DataFrame:
     customer_summary["eligible_for_90d_repeat"] = (
         customer_summary["first_purchase_timestamp"] <= eligibility_cutoff
     )
-    customer_summary["repeat_within_90d"] = (
-        customer_summary["second_purchase_timestamp"].notna()
-        & (
-            customer_summary["second_purchase_timestamp"]
-            <= customer_summary["first_purchase_timestamp"] + pd.Timedelta(days=REPEAT_WINDOW_DAYS)
-        )
+    customer_summary["repeat_within_90d"] = customer_summary[
+        "second_purchase_timestamp"
+    ].notna() & (
+        customer_summary["second_purchase_timestamp"]
+        <= customer_summary["first_purchase_timestamp"] + pd.Timedelta(days=REPEAT_WINDOW_DAYS)
     )
     return customer_summary
 
@@ -113,7 +120,8 @@ def build_cohort_matrix(delivered: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataF
     cohort_orders = delivered.copy()
     cohort_orders["cohort_month_period"] = cohort_orders["customer_unique_id"].map(first_month)
     cohort_orders["months_since_first"] = (
-        (cohort_orders["order_month_period"].dt.year - cohort_orders["cohort_month_period"].dt.year) * 12
+        (cohort_orders["order_month_period"].dt.year - cohort_orders["cohort_month_period"].dt.year)
+        * 12
         + cohort_orders["order_month_period"].dt.month
         - cohort_orders["cohort_month_period"].dt.month
     )
@@ -153,19 +161,27 @@ def build_repeat_summaries(
         .agg(orders=("order_id", "nunique"), gross_payment_volume=("payment_total", "sum"))
         .reset_index()
     )
-    monthly["order_type"] = np.where(monthly["is_repeat_order"], "repeat_order", "new_customer_order")
+    monthly["order_type"] = np.where(
+        monthly["is_repeat_order"], "repeat_order", "new_customer_order"
+    )
 
     eligible = customer_summary[customer_summary["eligible_for_90d_repeat"]].copy()
     overall = pd.DataFrame(
         [
             {
                 "customers": len(customer_summary),
-                "observed_repeat_customers": int(customer_summary["observed_repeat_customer"].sum()),
-                "observed_repeat_customer_rate": customer_summary["observed_repeat_customer"].mean(),
+                "observed_repeat_customers": int(
+                    customer_summary["observed_repeat_customer"].sum()
+                ),
+                "observed_repeat_customer_rate": customer_summary[
+                    "observed_repeat_customer"
+                ].mean(),
                 "eligible_customers_90d": len(eligible),
                 "repeat_customers_within_90d": int(eligible["repeat_within_90d"].sum()),
                 "repeat_rate_within_90d": eligible["repeat_within_90d"].mean(),
-                "median_days_to_second_purchase": customer_summary["days_to_second_purchase"].median(),
+                "median_days_to_second_purchase": customer_summary[
+                    "days_to_second_purchase"
+                ].median(),
             }
         ]
     )
@@ -238,9 +254,16 @@ def create_figures(
     plt.savefig(figures_dir / "cohort_repeat_activity_heatmap.png", dpi=160, bbox_inches="tight")
     plt.close(fig)
 
-    monthly_pivot = monthly.pivot(index="order_month", columns="order_type", values="orders").fillna(0)
+    monthly_pivot = monthly.pivot(
+        index="order_month", columns="order_type", values="orders"
+    ).fillna(0)
     fig, ax = plt.subplots(figsize=(13, 6))
-    ax.bar(monthly_pivot.index, monthly_pivot.get("new_customer_order", 0), label="New-customer orders", color="#4c78a8")
+    ax.bar(
+        monthly_pivot.index,
+        monthly_pivot.get("new_customer_order", 0),
+        label="New-customer orders",
+        color="#4c78a8",
+    )
     ax.bar(
         monthly_pivot.index,
         monthly_pivot.get("repeat_order", 0),
@@ -260,18 +283,24 @@ def create_figures(
     plot_data = experience_summary.copy()
     plot_data["label"] = plot_data["experience_dimension"] + ": " + plot_data["experience_group"]
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.barh(plot_data["label"], plot_data["repeat_rate_within_90d"], color=["#4c78a8", "#e45756"] * 2)
+    ax.barh(
+        plot_data["label"], plot_data["repeat_rate_within_90d"], color=["#4c78a8", "#e45756"] * 2
+    )
     ax.set_title("90-Day Repeat Rate by First-Order Experience")
     ax.set_xlabel("Observed Repeat Rate Within 90 Days")
     plt.tight_layout()
-    plt.savefig(figures_dir / "repeat_rate_by_first_order_experience.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "repeat_rate_by_first_order_experience.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
     days = customer_summary["days_to_second_purchase"].dropna()
     days = days[days <= 365]
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.hist(days, bins=np.arange(0, 371, 15), color="#72b7b2", edgecolor="white")
-    ax.axvline(days.median(), color="#d62728", linestyle="--", label=f"Median: {days.median():.0f} days")
+    ax.axvline(
+        days.median(), color="#d62728", linestyle="--", label=f"Median: {days.median():.0f} days"
+    )
     ax.set_title("Days to Second Delivered Order")
     ax.set_xlabel("Days")
     ax.set_ylabel("Customers")
@@ -294,16 +323,22 @@ def write_summary(
     ]
 
     def group_rate(frame: pd.DataFrame, group: str) -> float:
-        return float(frame.loc[frame["experience_group"].eq(group), "repeat_rate_within_90d"].iloc[0])
+        return float(
+            frame.loc[frame["experience_group"].eq(group), "repeat_rate_within_90d"].iloc[0]
+        )
 
     top_category = category_summary.iloc[0]
     summary = f"""# Cohort and Observed Repeat-Purchase Analysis
 
 ## Scope
 
-I analyzed delivered orders using `customer_unique_id` to measure observed repeat-purchase behavior.
+I analyzed delivered orders using `customer_unique_id` to measure observed repeat-purchase
+behavior.
 
-The dataset covers a limited historical window, so these metrics should not be interpreted as true long-term retention. To reduce right-censoring, the primary comparison uses a fixed {REPEAT_WINDOW_DAYS}-day repeat window and only includes customers whose first purchase occurred at least {REPEAT_WINDOW_DAYS} days before the final observed order date.
+The dataset covers a limited historical window, so these metrics should not be interpreted as true
+long-term retention. To reduce right-censoring, the primary comparison uses a fixed
+{REPEAT_WINDOW_DAYS}-day repeat window and only includes customers whose first purchase occurred at
+least {REPEAT_WINDOW_DAYS} days before the final observed order date.
 
 ## Main Results
 
@@ -323,13 +358,19 @@ The dataset covers a limited historical window, so these metrics should not be i
 - First order without a low review: {group_rate(low_review, 'No'):.1%} repeated within {REPEAT_WINDOW_DAYS} days
 - First order with a low review: {group_rate(low_review, 'Yes'):.1%} repeated within {REPEAT_WINDOW_DAYS} days
 
-These comparisons are descriptive and do not establish causality. Customer intent, category purchase cycles, and other unobserved factors may affect both first-order experience and repeat behavior.
+These comparisons are descriptive and do not establish causality. Customer intent, category
+purchase cycles, and other unobserved factors may affect both first-order experience and repeat
+behavior.
 
-Among first-order categories with at least 300 eligible customers, the highest observed {REPEAT_WINDOW_DAYS}-day repeat rate was `{top_category['first_product_category']}` at {top_category['repeat_rate_within_90d']:.1%}.
+Among first-order categories with at least 300 eligible customers, the highest observed
+{REPEAT_WINDOW_DAYS}-day repeat rate was `{top_category['first_product_category']}` at
+{top_category['repeat_rate_within_90d']:.1%}.
 
 ## Business Use
 
-This analysis adds a customer-lifecycle view to the project. It can support onboarding-quality monitoring, category-specific repeat-purchase strategy, and evaluation of whether poor first-order experiences are associated with weaker observed repeat behavior.
+This analysis adds a customer-lifecycle view to the project. It can support onboarding-quality
+monitoring, category-specific repeat-purchase strategy, and evaluation of whether poor first-order
+experiences are associated with weaker observed repeat behavior.
 """
     (reports_dir / "cohort_repeat_analysis_summary.md").write_text(summary, encoding="utf-8")
 

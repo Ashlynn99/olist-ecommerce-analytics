@@ -2,9 +2,12 @@
 
 ## Objective
 
-I built this model to rank low-review risk using only information available at or before purchase time.
+I built this model to rank low-review risk using only information available at or before purchase
+time.
 
-The feature set excludes actual delivery outcomes and current-order review information. Seller-history features are calculated as-of each order timestamp and only use seller delivery or review events that occurred before the current purchase.
+The feature set excludes actual delivery outcomes and current-order review information.
+Seller-history features are calculated as-of each order timestamp and only use seller delivery or
+review events that occurred before the current purchase.
 
 ## Time Split
 
@@ -29,8 +32,13 @@ The feature set excludes actual delivery outcomes and current-order review infor
 
 ## Interpretation
 
-This model is designed for early risk triage after an order is placed. It is expected to perform below the post-delivery model because it deliberately excludes the strongest delivery-outcome variables.
+This model is designed for early risk triage after an order is placed. It is expected to perform
+below the post-delivery model because it deliberately excludes the strongest delivery-outcome
+variables.
 
-The largest absolute coefficients include: main product category food drink, main product category fashion male clothing, seller prior deliveries mean, main seller state MT, main product category audio.
+The largest absolute coefficients include: main product category food drink, main product category
+fashion male clothing, seller prior deliveries mean, main seller state MT, main product category
+audio.
 
-Seller-history features are leakage-controlled, but the analysis remains observational. The model should support prioritization and monitoring rather than automated customer or seller decisions.
+Seller-history features are leakage-controlled, but the analysis remains observational. The model
+should support prioritization and monitoring rather than automated customer or seller decisions.

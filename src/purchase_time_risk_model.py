@@ -33,12 +33,13 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-
 TEST_START_DATE = pd.Timestamp("2018-01-01")
 
 
 def coerce_bool(series: pd.Series) -> pd.Series:
-    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype("boolean")
+    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype(
+        "boolean"
+    )
 
 
 def load_inputs(project_root: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -63,7 +64,9 @@ def load_inputs(project_root: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
     seller_orders["order_purchase_timestamp"] = pd.to_datetime(
         seller_orders["order_purchase_timestamp"], errors="coerce"
     )
-    reviews["review_answer_timestamp"] = pd.to_datetime(reviews["review_answer_timestamp"], errors="coerce")
+    reviews["review_answer_timestamp"] = pd.to_datetime(
+        reviews["review_answer_timestamp"], errors="coerce"
+    )
 
     for frame in [orders, seller_orders]:
         for col in ["is_delivered", "is_late", "is_low_review"]:
@@ -155,7 +158,9 @@ def build_seller_history_features(
         "order_purchase_timestamp",
     )
 
-    delivery_event_base = base.dropna(subset=["order_delivered_customer_date", "is_late_value"]).copy()
+    delivery_event_base = base.dropna(
+        subset=["order_delivered_customer_date", "is_late_value"]
+    ).copy()
     delivery_events = cumulative_event_table(
         delivery_event_base,
         "order_delivered_customer_date",
@@ -234,40 +239,34 @@ def build_seller_history_features(
         "seller_prior_low_reviews",
     ]
     seller_history[count_cols] = seller_history[count_cols].fillna(0)
-    seller_history["seller_prior_late_rate"] = (
-        seller_history["seller_prior_late_orders"]
-        / seller_history["seller_prior_deliveries"].replace(0, np.nan)
-    )
-    seller_history["seller_prior_avg_delivery_days"] = (
-        seller_history["seller_prior_delivery_days_total"]
-        / seller_history["seller_prior_deliveries"].replace(0, np.nan)
-    )
-    seller_history["seller_prior_low_review_rate"] = (
-        seller_history["seller_prior_low_reviews"]
-        / seller_history["seller_prior_reviews"].replace(0, np.nan)
-    )
+    seller_history["seller_prior_late_rate"] = seller_history[
+        "seller_prior_late_orders"
+    ] / seller_history["seller_prior_deliveries"].replace(0, np.nan)
+    seller_history["seller_prior_avg_delivery_days"] = seller_history[
+        "seller_prior_delivery_days_total"
+    ] / seller_history["seller_prior_deliveries"].replace(0, np.nan)
+    seller_history["seller_prior_low_review_rate"] = seller_history[
+        "seller_prior_low_reviews"
+    ] / seller_history["seller_prior_reviews"].replace(0, np.nan)
 
     seller_history["is_cross_state_num"] = seller_history["is_cross_state"].astype("Int64")
-    order_seller_features = (
-        seller_history.groupby("order_id", as_index=False)
-        .agg(
-            seller_history_rows=("seller_id", "count"),
-            seller_prior_orders_mean=("seller_prior_orders", "mean"),
-            seller_prior_orders_min=("seller_prior_orders", "min"),
-            seller_prior_orders_max=("seller_prior_orders", "max"),
-            seller_prior_order_value_mean=("seller_prior_order_value", "mean"),
-            seller_prior_deliveries_mean=("seller_prior_deliveries", "mean"),
-            seller_prior_late_rate_mean=("seller_prior_late_rate", "mean"),
-            seller_prior_late_rate_max=("seller_prior_late_rate", "max"),
-            seller_prior_avg_delivery_days_mean=("seller_prior_avg_delivery_days", "mean"),
-            seller_prior_reviews_mean=("seller_prior_reviews", "mean"),
-            seller_prior_low_review_rate_mean=("seller_prior_low_review_rate", "mean"),
-            seller_prior_low_review_rate_max=("seller_prior_low_review_rate", "max"),
-            avg_product_weight_g=("avg_product_weight_g", "mean"),
-            avg_product_volume_cm3=("avg_product_volume_cm3", "mean"),
-            avg_customer_seller_distance_km=("customer_seller_distance_km", "mean"),
-            any_cross_state=("is_cross_state_num", "max"),
-        )
+    order_seller_features = seller_history.groupby("order_id", as_index=False).agg(
+        seller_history_rows=("seller_id", "count"),
+        seller_prior_orders_mean=("seller_prior_orders", "mean"),
+        seller_prior_orders_min=("seller_prior_orders", "min"),
+        seller_prior_orders_max=("seller_prior_orders", "max"),
+        seller_prior_order_value_mean=("seller_prior_order_value", "mean"),
+        seller_prior_deliveries_mean=("seller_prior_deliveries", "mean"),
+        seller_prior_late_rate_mean=("seller_prior_late_rate", "mean"),
+        seller_prior_late_rate_max=("seller_prior_late_rate", "max"),
+        seller_prior_avg_delivery_days_mean=("seller_prior_avg_delivery_days", "mean"),
+        seller_prior_reviews_mean=("seller_prior_reviews", "mean"),
+        seller_prior_low_review_rate_mean=("seller_prior_low_review_rate", "mean"),
+        seller_prior_low_review_rate_max=("seller_prior_low_review_rate", "max"),
+        avg_product_weight_g=("avg_product_weight_g", "mean"),
+        avg_product_volume_cm3=("avg_product_volume_cm3", "mean"),
+        avg_customer_seller_distance_km=("customer_seller_distance_km", "mean"),
+        any_cross_state=("is_cross_state_num", "max"),
     )
     order_seller_features["new_seller_order"] = (
         order_seller_features["seller_prior_orders_max"].fillna(0).eq(0).astype(int)
@@ -332,7 +331,9 @@ def model_feature_lists() -> tuple[list[str], list[str]]:
     return numeric_features, categorical_features
 
 
-def evaluate_scores(y_true: pd.Series, scores: np.ndarray, threshold: float = 0.5) -> dict[str, float]:
+def evaluate_scores(
+    y_true: pd.Series, scores: np.ndarray, threshold: float = 0.5
+) -> dict[str, float]:
     predictions = scores >= threshold
     return {
         "threshold": threshold,
@@ -462,7 +463,9 @@ def train_purchase_time_model(
 
     metrics.to_csv(reports_dir / "purchase_time_model_metrics.csv", index=False)
     lift_table.to_csv(reports_dir / "purchase_time_model_lift_table.csv", index=False)
-    feature_importance.to_csv(reports_dir / "purchase_time_model_feature_importance.csv", index=False)
+    feature_importance.to_csv(
+        reports_dir / "purchase_time_model_feature_importance.csv", index=False
+    )
     test_predictions.to_csv(reports_dir / "purchase_time_model_test_predictions.csv", index=False)
 
     fpr, tpr, _ = roc_curve(y_test, model_scores)
@@ -489,7 +492,9 @@ def train_purchase_time_model(
     ax.set_xlabel("Share of Orders Reviewed")
     ax.set_ylabel("Share of Low Reviews Captured")
     plt.tight_layout()
-    plt.savefig(figures_dir / "purchase_time_model_cumulative_gain.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "purchase_time_model_cumulative_gain.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
     top_features = (
@@ -506,7 +511,9 @@ def train_purchase_time_model(
     ax.set_title("Purchase-Time Model: Largest Logistic Coefficients")
     ax.set_xlabel("Standardized Logistic Coefficient")
     plt.tight_layout()
-    plt.savefig(figures_dir / "purchase_time_model_feature_coefficients.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "purchase_time_model_feature_coefficients.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
     return metrics, lift_table, feature_importance
@@ -534,9 +541,12 @@ def write_summary(
 
 ## Objective
 
-I built this model to rank low-review risk using only information available at or before purchase time.
+I built this model to rank low-review risk using only information available at or before purchase
+time.
 
-The feature set excludes actual delivery outcomes and current-order review information. Seller-history features are calculated as-of each order timestamp and only use seller delivery or review events that occurred before the current purchase.
+The feature set excludes actual delivery outcomes and current-order review information.
+Seller-history features are calculated as-of each order timestamp and only use seller delivery or
+review events that occurred before the current purchase.
 
 ## Time Split
 
@@ -561,11 +571,14 @@ The feature set excludes actual delivery outcomes and current-order review infor
 
 ## Interpretation
 
-This model is designed for early risk triage after an order is placed. It is expected to perform below the post-delivery model because it deliberately excludes the strongest delivery-outcome variables.
+This model is designed for early risk triage after an order is placed. It is expected to perform
+below the post-delivery model because it deliberately excludes the strongest delivery-outcome
+variables.
 
 The largest absolute coefficients include: {top_features}.
 
-Seller-history features are leakage-controlled, but the analysis remains observational. The model should support prioritization and monitoring rather than automated customer or seller decisions.
+Seller-history features are leakage-controlled, but the analysis remains observational. The model
+should support prioritization and monitoring rather than automated customer or seller decisions.
 """
     (reports_dir / "purchase_time_model_summary.md").write_text(summary, encoding="utf-8")
 

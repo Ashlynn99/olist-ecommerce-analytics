@@ -2,13 +2,15 @@ PYTHON ?= python3
 VENV ?= .venv
 PYTHON_BIN := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
+CHECK_PYTHON := $(if $(wildcard $(PYTHON_BIN)),$(PYTHON_BIN),$(PYTHON))
 
-.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value dashboard report all clean
+.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value dashboard format check report all clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
 	$(PYTHON_BIN) -m pip install --upgrade pip
 	$(PIP) install -r requirements.txt
+	$(PIP) install -r requirements-dev.txt
 
 data:
 	$(PYTHON_BIN) scripts/check_data.py
@@ -33,6 +35,15 @@ intervention-value:
 
 dashboard:
 	$(PYTHON_BIN) -m streamlit run dashboard/app.py
+
+format:
+	$(CHECK_PYTHON) -m black dashboard scripts sql src
+	$(CHECK_PYTHON) scripts/format_markdown.py
+
+check:
+	$(CHECK_PYTHON) -m black --check dashboard scripts sql src
+	$(CHECK_PYTHON) scripts/format_markdown.py --check
+	$(CHECK_PYTHON) scripts/quality_check.py
 
 report:
 	@printf "Main report: reports/final_report.md\n"

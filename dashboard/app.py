@@ -10,7 +10,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 REPORTS_DIR = PROJECT_ROOT / "reports"
@@ -93,9 +92,7 @@ def executive_overview() -> None:
     orders["is_low_review"] = orders["is_low_review"].astype("boolean")
 
     total_orders = orders["order_id"].nunique()
-    delivered = int(
-        (orders["is_delivered"].fillna(False) & orders["delivery_days"].notna()).sum()
-    )
+    delivered = int((orders["is_delivered"].fillna(False) & orders["delivery_days"].notna()).sum())
     gross_payment = orders["payment_total"].sum()
     late_rate = orders.loc[orders["is_delivered"].fillna(False), "is_late"].mean()
     low_review_rate = orders.loc[orders["is_low_review"].notna(), "is_low_review"].mean()
@@ -188,7 +185,9 @@ def seller_risk_monitoring() -> None:
     latest = summary.iloc[-1]
 
     st.title("Seller Risk Monitoring")
-    st.caption("Monthly seller alerts combining experience risk, deterioration, and commercial exposure")
+    st.caption(
+        "Monthly seller alerts combining experience risk, deterioration, and commercial exposure"
+    )
     cols = st.columns(5)
     cols[0].metric("Monitoring Month", str(latest["order_month"]))
     cols[1].metric("Active Sellers", f"{int(latest['active_sellers']):,}")
@@ -278,7 +277,9 @@ def purchase_time_triage() -> None:
     top_10 = lift[np.isclose(lift["top_risk_share"], 0.10)].iloc[0]
 
     st.title("Purchase-Time Risk Triage")
-    st.caption("Leakage-controlled risk ranking using only information available at or before purchase")
+    st.caption(
+        "Leakage-controlled risk ranking using only information available at or before purchase"
+    )
     cols = st.columns(5)
     cols[0].metric("ROC-AUC", f"{model['roc_auc']:.3f}")
     cols[1].metric("PR-AUC", f"{model['pr_auc']:.3f}")
@@ -355,7 +356,9 @@ def intervention_roi_simulator() -> None:
     }
 
     st.title("Intervention ROI Simulator")
-    st.caption("Scenario tool for selecting intervention capacity under explicit cost and impact assumptions")
+    st.caption(
+        "Scenario tool for selecting intervention capacity under explicit cost and impact assumptions"
+    )
     strategy = st.segmented_control(
         "Strategy",
         options=list(strategy_labels),
@@ -366,7 +369,9 @@ def intervention_roi_simulator() -> None:
     base = coverage[coverage["strategy"].eq(strategy)].copy()
 
     a, b, c = st.columns(3)
-    cost = a.number_input("Cost per contact, BRL", 0.5, 50.0, float(base["cost_per_contact_brl"].iloc[0]), 0.5)
+    cost = a.number_input(
+        "Cost per contact, BRL", 0.5, 50.0, float(base["cost_per_contact_brl"].iloc[0]), 0.5
+    )
     effect_percent = b.slider(
         "Intervention effectiveness",
         min_value=1,
@@ -385,9 +390,7 @@ def intervention_roi_simulator() -> None:
     )
 
     base["intervention_cost_brl"] = base["orders_contacted"] * cost
-    base["expected_benefit_brl"] = (
-        base["observed_low_reviews_in_segment"] * effect * value
-    )
+    base["expected_benefit_brl"] = base["observed_low_reviews_in_segment"] * effect * value
     base["expected_net_value_brl"] = base["expected_benefit_brl"] - base["intervention_cost_brl"]
     base["expected_roi"] = base["expected_net_value_brl"] / base["intervention_cost_brl"]
     base["break_even_effectiveness"] = base["intervention_cost_brl"] / (
@@ -416,15 +419,13 @@ def intervention_roi_simulator() -> None:
     st.plotly_chart(style_figure(fig, 440), width="stretch")
 
     with st.expander("How to interpret this scenario"):
-        st.markdown(
-            f"""
+        st.markdown(f"""
             The stored base recommendation for this strategy is **{default['recommended_coverage_share']:.0%}**
             coverage. This simulator recalculates the decision using your assumptions.
 
             The values are retrospective scenarios, not realized causal savings. A randomized pilot is
             required before production rollout.
-            """
-        )
+            """)
 
 
 PAGES = {

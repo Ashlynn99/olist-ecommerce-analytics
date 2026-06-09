@@ -14,7 +14,9 @@ Rank delivered orders by the probability of receiving a low review score (`revie
 
 ## Leakage Control
 
-The model excludes review text, review score, review count, and any field derived directly from the review outcome. It does include post-delivery operational fields such as actual delivery days and late-delivery status, so it is designed for service recovery and operational review after delivery.
+The model excludes review text, review score, review count, and any field derived directly from the
+review outcome. It does include post-delivery operational fields such as actual delivery days and
+late-delivery status, so it is designed for service recovery and operational review after delivery.
 
 ## Model Performance
 
@@ -25,6 +27,9 @@ The model excludes review text, review score, review count, and any field derive
 
 ## Interpretation
 
-I treat the model as a post-delivery risk-ranking tool rather than an automated decision system. It can help prioritize delivered orders for customer support follow-up or operational review.
+I treat the model as a post-delivery risk-ranking tool rather than an automated decision system. It
+can help prioritize delivered orders for customer support follow-up or operational review.
 
-The project also includes a separate purchase-time model that excludes current-order delivery outcomes. Comparing the two models separates prevention use cases from post-delivery recovery use cases and makes the cost of earlier prediction explicit.
+The project also includes a separate purchase-time model that excludes current-order delivery
+outcomes. Comparing the two models separates prevention use cases from post-delivery recovery use
+cases and makes the cost of earlier prediction explicit.

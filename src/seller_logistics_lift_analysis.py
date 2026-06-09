@@ -26,7 +26,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 def coerce_bool(series: pd.Series) -> pd.Series:
-    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype("boolean")
+    return series.replace({"True": True, "False": False, "true": True, "false": False}).astype(
+        "boolean"
+    )
 
 
 def haversine_km(lat1, lng1, lat2, lng2):
@@ -57,7 +59,9 @@ def load_inputs(project_root: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
     items = pd.read_csv(processed_dir / "order_items_enriched.csv")
     geolocation = pd.read_csv(processed_dir / "geolocation_clean.csv")
 
-    orders["order_purchase_timestamp"] = pd.to_datetime(orders["order_purchase_timestamp"], errors="coerce")
+    orders["order_purchase_timestamp"] = pd.to_datetime(
+        orders["order_purchase_timestamp"], errors="coerce"
+    )
     for col in ["is_delivered", "is_late", "is_low_review"]:
         if col in orders.columns:
             orders[col] = coerce_bool(orders[col])
@@ -65,7 +69,9 @@ def load_inputs(project_root: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
     return orders, items, geolocation
 
 
-def build_seller_order_base(orders: pd.DataFrame, items: pd.DataFrame, geolocation: pd.DataFrame) -> pd.DataFrame:
+def build_seller_order_base(
+    orders: pd.DataFrame, items: pd.DataFrame, geolocation: pd.DataFrame
+) -> pd.DataFrame:
     items_with_volume = items.copy()
     items_with_volume["product_volume_cm3"] = (
         items_with_volume["product_length_cm"]
@@ -73,19 +79,16 @@ def build_seller_order_base(orders: pd.DataFrame, items: pd.DataFrame, geolocati
         * items_with_volume["product_width_cm"]
     )
 
-    seller_order = (
-        items_with_volume.groupby(["seller_id", "order_id"], as_index=False)
-        .agg(
-            seller_order_items=("order_item_id", "count"),
-            seller_product_total=("price", "sum"),
-            seller_freight_total=("freight_value", "sum"),
-            seller_item_total=("item_total", "sum"),
-            avg_product_weight_g=("product_weight_g", "mean"),
-            avg_product_volume_cm3=("product_volume_cm3", "mean"),
-            seller_zip_code_prefix=("seller_zip_code_prefix", "first"),
-            seller_city=("seller_city", "first"),
-            seller_state=("seller_state", "first"),
-        )
+    seller_order = items_with_volume.groupby(["seller_id", "order_id"], as_index=False).agg(
+        seller_order_items=("order_item_id", "count"),
+        seller_product_total=("price", "sum"),
+        seller_freight_total=("freight_value", "sum"),
+        seller_item_total=("item_total", "sum"),
+        avg_product_weight_g=("product_weight_g", "mean"),
+        avg_product_volume_cm3=("product_volume_cm3", "mean"),
+        seller_zip_code_prefix=("seller_zip_code_prefix", "first"),
+        seller_city=("seller_city", "first"),
+        seller_state=("seller_state", "first"),
     )
 
     order_cols = [
@@ -152,24 +155,21 @@ def create_seller_scorecard(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     scored_orders = seller_order[seller_order["review_score_mean"].notna()].copy()
 
-    seller_scorecard = (
-        scored_orders.groupby("seller_id", as_index=False)
-        .agg(
-            orders=("order_id", "nunique"),
-            seller_gmv=("seller_item_total", "sum"),
-            product_revenue=("seller_product_total", "sum"),
-            freight_revenue=("seller_freight_total", "sum"),
-            avg_order_value=("seller_item_total", "mean"),
-            avg_delivery_days=("delivery_days", "mean"),
-            late_rate=("is_late", lambda s: pd.Series(s).astype("boolean").mean()),
-            avg_review_score=("review_score_mean", "mean"),
-            low_review_rate=("is_low_review", lambda s: pd.Series(s).astype("boolean").mean()),
-            cross_state_rate=("is_cross_state", "mean"),
-            avg_distance_km=("customer_seller_distance_km", "mean"),
-            avg_freight_share=("seller_freight_share", "mean"),
-            seller_state=("seller_state", "first"),
-            seller_city=("seller_city", "first"),
-        )
+    seller_scorecard = scored_orders.groupby("seller_id", as_index=False).agg(
+        orders=("order_id", "nunique"),
+        seller_gmv=("seller_item_total", "sum"),
+        product_revenue=("seller_product_total", "sum"),
+        freight_revenue=("seller_freight_total", "sum"),
+        avg_order_value=("seller_item_total", "mean"),
+        avg_delivery_days=("delivery_days", "mean"),
+        late_rate=("is_late", lambda s: pd.Series(s).astype("boolean").mean()),
+        avg_review_score=("review_score_mean", "mean"),
+        low_review_rate=("is_low_review", lambda s: pd.Series(s).astype("boolean").mean()),
+        cross_state_rate=("is_cross_state", "mean"),
+        avg_distance_km=("customer_seller_distance_km", "mean"),
+        avg_freight_share=("seller_freight_share", "mean"),
+        seller_state=("seller_state", "first"),
+        seller_city=("seller_city", "first"),
     )
 
     min_orders = 30
@@ -177,13 +177,17 @@ def create_seller_scorecard(
     gmv_cutoff = seller_scorecard.loc[eligible, "seller_gmv"].quantile(0.75)
     risk_cutoff = seller_scorecard.loc[eligible, "low_review_rate"].quantile(0.75)
 
-    seller_scorecard["value_tier"] = np.where(seller_scorecard["seller_gmv"] >= gmv_cutoff, "high_value", "standard_value")
+    seller_scorecard["value_tier"] = np.where(
+        seller_scorecard["seller_gmv"] >= gmv_cutoff, "high_value", "standard_value"
+    )
     seller_scorecard["risk_tier"] = np.where(
         seller_scorecard["low_review_rate"] >= risk_cutoff, "high_risk", "standard_risk"
     )
     seller_scorecard.loc[~eligible, "value_tier"] = "low_volume"
     seller_scorecard.loc[~eligible, "risk_tier"] = "low_volume"
-    seller_scorecard["seller_segment"] = seller_scorecard["value_tier"] + "__" + seller_scorecard["risk_tier"]
+    seller_scorecard["seller_segment"] = (
+        seller_scorecard["value_tier"] + "__" + seller_scorecard["risk_tier"]
+    )
 
     seller_segment_summary = (
         seller_scorecard.groupby("seller_segment", as_index=False)
@@ -238,7 +242,9 @@ def create_seller_scorecard(
         .sort_values("low_review_rate", ascending=True)
     )
     fig, ax = plt.subplots(figsize=(12, 7))
-    labels = top_risky["seller_id"].str.slice(0, 8) + " (" + top_risky["seller_state"].fillna("NA") + ")"
+    labels = (
+        top_risky["seller_id"].str.slice(0, 8) + " (" + top_risky["seller_state"].fillna("NA") + ")"
+    )
     ax.barh(labels, top_risky["low_review_rate"], color="#d62728")
     ax.set_title("Highest Low-Review Sellers Among Sellers With 30+ Orders")
     ax.set_xlabel("Low Review Rate")
@@ -283,17 +289,14 @@ def create_logistics_distance_analysis(
         .reset_index()
     )
 
-    route_summary = (
-        logistics.groupby("route_type", as_index=False)
-        .agg(
-            seller_orders=("order_id", "count"),
-            avg_distance_km=("customer_seller_distance_km", "mean"),
-            avg_delivery_days=("delivery_days", "mean"),
-            late_rate=("is_late", lambda s: pd.Series(s).astype("boolean").mean()),
-            avg_review_score=("review_score_mean", "mean"),
-            low_review_rate=("is_low_review", lambda s: pd.Series(s).astype("boolean").mean()),
-            avg_freight_share=("seller_freight_share", "mean"),
-        )
+    route_summary = logistics.groupby("route_type", as_index=False).agg(
+        seller_orders=("order_id", "count"),
+        avg_distance_km=("customer_seller_distance_km", "mean"),
+        avg_delivery_days=("delivery_days", "mean"),
+        late_rate=("is_late", lambda s: pd.Series(s).astype("boolean").mean()),
+        avg_review_score=("review_score_mean", "mean"),
+        low_review_rate=("is_low_review", lambda s: pd.Series(s).astype("boolean").mean()),
+        avg_freight_share=("seller_freight_share", "mean"),
     )
 
     state_lane_summary = (
@@ -319,8 +322,16 @@ def create_logistics_distance_analysis(
     fig, ax1 = plt.subplots(figsize=(12, 6))
     ax2 = ax1.twinx()
     ax1.bar(x, distance_summary["seller_orders"], color="#bab0ac", label="Seller-orders")
-    ax2.plot(x, distance_summary["avg_delivery_days"], marker="o", color="#1f77b4", label="Avg delivery days")
-    ax2.plot(x, distance_summary["low_review_rate"], marker="o", color="#d62728", label="Low review rate")
+    ax2.plot(
+        x,
+        distance_summary["avg_delivery_days"],
+        marker="o",
+        color="#1f77b4",
+        label="Avg delivery days",
+    )
+    ax2.plot(
+        x, distance_summary["low_review_rate"], marker="o", color="#d62728", label="Low review rate"
+    )
     ax1.set_xticks(x)
     ax1.set_xticklabels(distance_summary["distance_bucket_km"].astype(str), rotation=25)
     ax1.set_title("Distance Buckets: Delivery Time and Low Review Risk")
@@ -331,16 +342,30 @@ def create_logistics_distance_analysis(
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
     plt.tight_layout()
-    plt.savefig(figures_dir / "logistics_distance_delivery_review.png", dpi=160, bbox_inches="tight")
+    plt.savefig(
+        figures_dir / "logistics_distance_delivery_review.png", dpi=160, bbox_inches="tight"
+    )
     plt.close(fig)
 
     route_plot = route_summary.sort_values("route_type")
     x = np.arange(len(route_plot))
     fig, ax = plt.subplots(figsize=(9, 6))
     width = 0.25
-    ax.bar(x - width, route_plot["avg_delivery_days"], width=width, label="Avg delivery days", color="#1f77b4")
+    ax.bar(
+        x - width,
+        route_plot["avg_delivery_days"],
+        width=width,
+        label="Avg delivery days",
+        color="#1f77b4",
+    )
     ax.bar(x, route_plot["late_rate"], width=width, label="Late rate", color="#ff7f0e")
-    ax.bar(x + width, route_plot["low_review_rate"], width=width, label="Low review rate", color="#d62728")
+    ax.bar(
+        x + width,
+        route_plot["low_review_rate"],
+        width=width,
+        label="Low review rate",
+        color="#d62728",
+    )
     ax.set_xticks(x)
     ax.set_xticklabels(route_plot["route_type"])
     ax.set_title("Same-State vs Cross-State Delivery Experience")
@@ -352,7 +377,9 @@ def create_logistics_distance_analysis(
     return distance_summary, route_summary, state_lane_summary
 
 
-def create_model_lift_analysis(orders: pd.DataFrame, reports_dir: Path, figures_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def create_model_lift_analysis(
+    orders: pd.DataFrame, reports_dir: Path, figures_dir: Path
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     model_data = orders[
         orders["is_delivered"].fillna(False)
         & orders["is_low_review"].notna()
@@ -419,7 +446,10 @@ def create_model_lift_analysis(orders: pd.DataFrame, reports_dir: Path, figures_
     model = Pipeline(
         steps=[
             ("preprocessor", preprocessor),
-            ("classifier", LogisticRegression(max_iter=2000, class_weight="balanced", random_state=42)),
+            (
+                "classifier",
+                LogisticRegression(max_iter=2000, class_weight="balanced", random_state=42),
+            ),
         ]
     )
     model.fit(X_train, y_train)
@@ -448,11 +478,17 @@ def create_model_lift_analysis(orders: pd.DataFrame, reports_dir: Path, figures_
         ]
     ].copy()
     predictions["low_review_probability"] = y_score
-    predictions["risk_rank"] = predictions["low_review_probability"].rank(method="first", ascending=False).astype(int)
+    predictions["risk_rank"] = (
+        predictions["low_review_probability"].rank(method="first", ascending=False).astype(int)
+    )
     predictions["risk_percentile"] = predictions["risk_rank"] / len(predictions)
-    predictions["predicted_at_best_threshold"] = predictions["low_review_probability"] >= best_threshold
+    predictions["predicted_at_best_threshold"] = (
+        predictions["low_review_probability"] >= best_threshold
+    )
 
-    sorted_pred = predictions.sort_values("low_review_probability", ascending=False).reset_index(drop=True)
+    sorted_pred = predictions.sort_values("low_review_probability", ascending=False).reset_index(
+        drop=True
+    )
     total_low_reviews = sorted_pred["target_low_review"].sum()
     baseline_rate = sorted_pred["target_low_review"].mean()
 
@@ -484,7 +520,13 @@ def create_model_lift_analysis(orders: pd.DataFrame, reports_dir: Path, figures_
     cumulative.to_csv(reports_dir / "model_low_review_cumulative_gain.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(cumulative["orders_share"], cumulative["capture_rate"], color="#d62728", linewidth=2, label="Model")
+    ax.plot(
+        cumulative["orders_share"],
+        cumulative["capture_rate"],
+        color="#d62728",
+        linewidth=2,
+        label="Model",
+    )
     ax.plot([0, 1], [0, 1], color="#7f7f7f", linestyle="--", label="Random")
     ax.set_title("Cumulative Gain: Low Reviews Captured by Risk Ranking")
     ax.set_xlabel("Share of Orders Reviewed")
@@ -559,7 +601,8 @@ I built a seller scorecard to compare marketplace value with customer experience
 - High-value high-risk sellers: {high_value_high_risk_sellers:,}
 - Orders associated with high-value high-risk sellers: {high_value_high_risk_orders:,}
 
-This segment is useful for marketplace operations because it highlights sellers that contribute meaningful order volume while also creating higher customer dissatisfaction risk.
+This segment is useful for marketplace operations because it highlights sellers that contribute
+meaningful order volume while also creating higher customer dissatisfaction risk.
 
 ## 2. Logistics Distance and Cross-State Delivery
 
@@ -571,7 +614,8 @@ I estimated customer-seller distance using zip-code-level geolocation and compar
 - Cross-state average delivery days: {cross_state['avg_delivery_days']:.2f}
 - Same-state low-review rate: {same_state['low_review_rate']:.1%}
 - Cross-state low-review rate: {cross_state['low_review_rate']:.1%}
-- Longest distance bucket analyzed: {farthest_bucket['distance_bucket_km']} km, with average delivery days of {farthest_bucket['avg_delivery_days']:.2f}
+- Longest distance bucket analyzed: {farthest_bucket['distance_bucket_km']} km, with average
+  delivery days of {farthest_bucket['avg_delivery_days']:.2f}
 
 This adds context to the delivery-delay finding: longer and cross-state routes are slower and carry higher review risk.
 
@@ -586,7 +630,8 @@ I converted the post-delivery low-review model into a prioritization view for a 
 - Top 10% lift vs baseline: {top_10['lift_vs_baseline']:.2f}x
 - Top 20% highest-risk orders capture {top_20['capture_rate']:.1%} of low reviews
 
-This makes the model easier to discuss in business terms: it shows how much low-review risk can be covered if the team only reviews the riskiest delivered orders.
+This makes the model easier to discuss in business terms: it shows how much low-review risk can be
+covered if the team only reviews the riskiest delivered orders.
 
 ## Project Positioning
 
@@ -612,13 +657,22 @@ def main() -> None:
     seller_order = build_seller_order_base(orders, items, geolocation)
     seller_order.to_csv(processed_dir / "seller_order_base.csv", index=False)
 
-    seller_scorecard, seller_segment_summary = create_seller_scorecard(seller_order, reports_dir, figures_dir)
+    seller_scorecard, seller_segment_summary = create_seller_scorecard(
+        seller_order, reports_dir, figures_dir
+    )
     distance_summary, route_summary, state_lane_summary = create_logistics_distance_analysis(
         seller_order, reports_dir, figures_dir
     )
     lift_table, lift_metrics = create_model_lift_analysis(orders, reports_dir, figures_dir)
 
-    write_summary(reports_dir, seller_segment_summary, distance_summary, route_summary, lift_table, lift_metrics)
+    write_summary(
+        reports_dir,
+        seller_segment_summary,
+        distance_summary,
+        route_summary,
+        lift_table,
+        lift_metrics,
+    )
 
     print("Additional seller, logistics, and lift analysis completed.")
     print(f"Seller scorecard rows: {len(seller_scorecard):,}")

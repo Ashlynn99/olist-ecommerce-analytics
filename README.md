@@ -1,18 +1,28 @@
 # Olist E-Commerce Operations Analytics
 
-End-to-end marketplace analytics project combining business intelligence, leakage-aware risk modeling, seller monitoring, customer lifecycle analysis, and intervention ROI simulation.
+[![Quality checks](https://github.com/Ashlynn99/olist-ecommerce-analytics/actions/workflows/quality.yml/badge.svg)](https://github.com/Ashlynn99/olist-ecommerce-analytics/actions/workflows/quality.yml)
 
-I built the project around a practical operating question: **how should an e-commerce marketplace identify customer-experience risk early, prioritize limited operations capacity, and decide whether intervention is economically justified?**
+End-to-end marketplace analytics project combining business intelligence, leakage-aware risk
+modeling, seller monitoring, customer lifecycle analysis, and intervention ROI simulation.
 
-Data source: [Olist Brazilian E-Commerce Public Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+I built the project around a practical operating question: **how should an e-commerce marketplace
+identify customer-experience risk early, prioritize limited operations capacity, and decide whether
+intervention is economically justified?**
+
+Data source: [Kaggle Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
 ## Executive Summary
 
-- Built a reproducible Python, SQL, and Streamlit workflow across 9 relational source tables and 99,441 orders.
-- Identified delivery delay as the strongest operational issue: orders delivered 15+ days late had a 78.9% low-review rate.
-- Developed separate purchase-time and post-delivery risk models to distinguish prevention from service-recovery use cases.
-- Converted a static seller scorecard into monthly risk monitoring with prioritized alerts, risk transitions, and recommended actions.
-- Translated model rankings into cost, ROI, break-even, and sensitivity scenarios for operational decision-making.
+- Built a reproducible Python, SQL, and Streamlit workflow across 9 relational source tables and
+  99,441 orders.
+- Identified delivery delay as the strongest operational issue: orders delivered 15+ days late had a
+  78.9% low-review rate.
+- Developed separate purchase-time and post-delivery risk models to distinguish prevention from
+  service-recovery use cases.
+- Converted a static seller scorecard into monthly risk monitoring with prioritized alerts, risk
+  transitions, and recommended actions.
+- Translated model rankings into cost, ROI, break-even, and sensitivity scenarios for operational
+  decision-making.
 
 ## Core Business Questions
 
@@ -89,9 +99,11 @@ cd olist-ecommerce-analytics
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Download the 9 Kaggle CSV files into data/raw/
 make analysis
+make check
 make dashboard
 ```
 
@@ -107,13 +119,20 @@ make intervention-value
 ## Project Structure
 
 ```text
-dashboard/   Streamlit operating dashboard
-notebooks/   10 ordered analysis notebooks
-src/         Reusable modeling and monitoring modules
-sql/         Reusable DuckDB business queries
-reports/     Results, charts, summaries, and full report
-data/        Raw and generated data instructions
+├── dashboard/
+│   └── app.py                # Four-view Streamlit operations dashboard
+├── notebooks/                # 10 ordered analysis notebooks
+├── scripts/
+│   ├── run_pipeline.py       # End-to-end notebook runner
+│   └── quality_check.py      # Repository integrity and syntax checks
+├── src/                      # Reusable modeling and monitoring modules
+├── sql/                      # Reusable DuckDB business queries
+├── reports/                  # Results, charts, summaries, and full report
+└── data/                     # Raw and generated data instructions
 ```
+
+Run `make check` to validate Python syntax, Markdown formatting, notebook JSON, Makefile targets,
+critical file line structure, and required project paths.
 
 ## Detailed Documentation
 
@@ -127,6 +146,8 @@ data/        Raw and generated data instructions
 ## Decision Boundaries
 
 - The historical dataset covers 2016–2018 and does not represent current Olist operations.
-- The purchase-time model is designed for prevention; the post-delivery model is designed for service recovery.
+- The purchase-time model is designed for prevention; the post-delivery model is designed for
+  service recovery.
 - Seller alerts prioritize investigation and should not be used as automatic penalties.
-- Intervention-value outputs are scenarios, not realized causal savings. A randomized pilot is required before rollout.
+- Intervention-value outputs are scenarios, not realized causal savings. A randomized pilot is
+  required before rollout.

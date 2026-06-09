@@ -19,7 +19,9 @@ def main() -> None:
     missing_files = [path for path in required_files if not path.exists()]
     if missing_files:
         missing = "\n".join(str(path) for path in missing_files)
-        raise FileNotFoundError(f"Missing processed files. Run 02_data_cleaning.ipynb first:\n{missing}")
+        raise FileNotFoundError(
+            f"Missing processed files. Run 02_data_cleaning.ipynb first:\n{missing}"
+        )
 
     with duckdb.connect(database_path) as con:
         con.execute("DROP VIEW IF EXISTS v_monthly_kpis;")
@@ -63,8 +65,7 @@ def main() -> None:
             [str(quality_path)],
         )
 
-        con.execute(
-            """
+        con.execute("""
             CREATE VIEW v_monthly_kpis AS
             SELECT
                 purchase_month,
@@ -79,11 +80,9 @@ def main() -> None:
             FROM orders_analysis_base
             WHERE payment_total IS NOT NULL
             GROUP BY purchase_month;
-            """
-        )
+            """)
 
-        con.execute(
-            """
+        con.execute("""
             CREATE VIEW v_category_summary AS
             SELECT
                 main_product_category,
@@ -98,11 +97,9 @@ def main() -> None:
             FROM orders_analysis_base
             WHERE main_product_category IS NOT NULL
             GROUP BY main_product_category;
-            """
-        )
+            """)
 
-        con.execute(
-            """
+        con.execute("""
             CREATE VIEW v_state_summary AS
             SELECT
                 customer_state,
@@ -116,11 +113,9 @@ def main() -> None:
             FROM orders_analysis_base
             WHERE customer_state IS NOT NULL
             GROUP BY customer_state;
-            """
-        )
+            """)
 
-        row_counts = con.execute(
-            """
+        row_counts = con.execute("""
             SELECT 'orders_analysis_base' AS table_name, COUNT(*) AS rows FROM orders_analysis_base
             UNION ALL
             SELECT 'order_items_enriched', COUNT(*) FROM order_items_enriched
@@ -128,8 +123,7 @@ def main() -> None:
             SELECT 'products_clean', COUNT(*) FROM products_clean
             UNION ALL
             SELECT 'data_quality_summary', COUNT(*) FROM data_quality_summary;
-            """
-        ).fetchdf()
+            """).fetchdf()
 
     print(f"Created DuckDB database: {database_path}")
     print(row_counts.to_string(index=False))

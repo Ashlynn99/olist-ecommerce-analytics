@@ -31,4 +31,5 @@
 
 ## Business Interpretation
 
-A useful next step is to quantify how delivery delay, freight burden, product category, and region relate to low-review risk. I use that direction in the modeling notebook.
+A useful next step is to quantify how delivery delay, freight burden, product category, and region
+relate to low-review risk. I use that direction in the modeling notebook.

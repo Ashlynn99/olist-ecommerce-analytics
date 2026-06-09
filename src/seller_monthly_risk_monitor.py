@@ -18,7 +18,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 PRIOR_STRENGTH = 20
 MIN_MONTHLY_ORDERS = 5
 MIN_MONTHLY_REVIEWS = 3
@@ -127,27 +126,24 @@ def aggregate_seller_months(monitor: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_marketplace_benchmarks(seller_month: pd.DataFrame) -> pd.DataFrame:
-    marketplace = (
-        seller_month.groupby("order_month", as_index=False)
-        .agg(
-            market_seller_orders=("seller_orders", "sum"),
-            market_seller_gmv=("seller_gmv", "sum"),
-            market_delivered_orders=("delivered_orders", "sum"),
-            market_late_orders=("late_orders", "sum"),
-            market_reviewed_orders=("reviewed_orders", "sum"),
-            market_low_review_orders=("low_review_orders", "sum"),
-            market_canceled_orders=("canceled_orders", "sum"),
-        )
+    marketplace = seller_month.groupby("order_month", as_index=False).agg(
+        market_seller_orders=("seller_orders", "sum"),
+        market_seller_gmv=("seller_gmv", "sum"),
+        market_delivered_orders=("delivered_orders", "sum"),
+        market_late_orders=("late_orders", "sum"),
+        market_reviewed_orders=("reviewed_orders", "sum"),
+        market_low_review_orders=("low_review_orders", "sum"),
+        market_canceled_orders=("canceled_orders", "sum"),
     )
     marketplace["market_late_rate"] = marketplace["market_late_orders"] / marketplace[
         "market_delivered_orders"
     ].replace(0, np.nan)
-    marketplace["market_low_review_rate"] = marketplace[
-        "market_low_review_orders"
-    ] / marketplace["market_reviewed_orders"].replace(0, np.nan)
-    marketplace["market_cancellation_rate"] = marketplace[
-        "market_canceled_orders"
-    ] / marketplace["market_seller_orders"].replace(0, np.nan)
+    marketplace["market_low_review_rate"] = marketplace["market_low_review_orders"] / marketplace[
+        "market_reviewed_orders"
+    ].replace(0, np.nan)
+    marketplace["market_cancellation_rate"] = marketplace["market_canceled_orders"] / marketplace[
+        "market_seller_orders"
+    ].replace(0, np.nan)
 
     return seller_month.merge(marketplace, on="order_month", how="left")
 
@@ -173,8 +169,7 @@ def add_smoothed_rates_and_history(seller_month: pd.DataFrame) -> pd.DataFrame:
             seller_month[f"prior_{bad_col}"] + PRIOR_STRENGTH * seller_month[market_col]
         ) / (seller_month[f"prior_{denominator_col}"] + PRIOR_STRENGTH)
         seller_month[f"{label}_rate_deterioration"] = (
-            seller_month[f"smoothed_{label}_rate"]
-            - seller_month[f"historical_{label}_rate"]
+            seller_month[f"smoothed_{label}_rate"] - seller_month[f"historical_{label}_rate"]
         ).clip(lower=0)
 
     return seller_month
@@ -210,24 +205,23 @@ def add_risk_scores(seller_month: pd.DataFrame) -> pd.DataFrame:
         + 0.35 * seller_month["late_deterioration_percentile"]
         + 0.15 * seller_month["cancellation_deterioration_percentile"]
     )
-    seller_month["reliability_score"] = np.minimum(
-        1.0, np.sqrt(seller_month["seller_orders"] / 20)
-    )
+    seller_month["reliability_score"] = np.minimum(1.0, np.sqrt(seller_month["seller_orders"] / 20))
     seller_month["priority_score"] = (
         0.55 * seller_month["experience_risk_score"]
         + 0.25 * seller_month["deterioration_score"]
         + 20 * seller_month["gmv_percentile"]
     ) * (0.65 + 0.35 * seller_month["reliability_score"])
 
-    seller_month["eligible_for_alert"] = (
-        seller_month["seller_orders"].ge(MIN_MONTHLY_ORDERS)
-        & seller_month["reviewed_orders"].ge(MIN_MONTHLY_REVIEWS)
-    )
+    seller_month["eligible_for_alert"] = seller_month["seller_orders"].ge(
+        MIN_MONTHLY_ORDERS
+    ) & seller_month["reviewed_orders"].ge(MIN_MONTHLY_REVIEWS)
     seller_month["priority_percentile"] = np.nan
     eligible = seller_month["eligible_for_alert"]
-    seller_month.loc[eligible, "priority_percentile"] = seller_month.loc[eligible].groupby(
-        "order_month"
-    )["priority_score"].transform(percentile_by_month)
+    seller_month.loc[eligible, "priority_percentile"] = (
+        seller_month.loc[eligible]
+        .groupby("order_month")["priority_score"]
+        .transform(percentile_by_month)
+    )
 
     seller_month["risk_status"] = "stable"
     seller_month.loc[~eligible, "risk_status"] = "insufficient_volume"
@@ -288,12 +282,14 @@ def add_alerts_and_transitions(seller_month: pd.DataFrame) -> pd.DataFrame:
     both_insufficient = seller_month["previous_risk_status"].eq(
         "insufficient_volume"
     ) & seller_month["risk_status"].eq("insufficient_volume")
-    became_eligible = seller_month["previous_risk_status"].eq(
-        "insufficient_volume"
-    ) & seller_month["risk_status"].ne("insufficient_volume")
-    lost_eligibility = seller_month["previous_risk_status"].ne(
-        "insufficient_volume"
-    ) & seller_month["risk_status"].eq("insufficient_volume") & has_previous
+    became_eligible = seller_month["previous_risk_status"].eq("insufficient_volume") & seller_month[
+        "risk_status"
+    ].ne("insufficient_volume")
+    lost_eligibility = (
+        seller_month["previous_risk_status"].ne("insufficient_volume")
+        & seller_month["risk_status"].eq("insufficient_volume")
+        & has_previous
+    )
     seller_month["risk_transition"] = "new_or_returning"
     seller_month.loc[both_insufficient, "risk_transition"] = "unchanged"
     seller_month.loc[became_eligible, "risk_transition"] = "became_eligible"
@@ -314,19 +310,16 @@ def create_report_tables(
         ascending=[True, False, False],
     )
 
-    monthly_summary = (
-        seller_month.groupby("order_month", as_index=False)
-        .agg(
-            active_sellers=("seller_id", "nunique"),
-            alert_eligible_sellers=("eligible_for_alert", "sum"),
-            seller_orders=("seller_orders", "sum"),
-            seller_gmv=("seller_gmv", "sum"),
-            delivered_orders=("delivered_orders", "sum"),
-            late_orders=("late_orders", "sum"),
-            reviewed_orders=("reviewed_orders", "sum"),
-            low_review_orders=("low_review_orders", "sum"),
-            canceled_orders=("canceled_orders", "sum"),
-        )
+    monthly_summary = seller_month.groupby("order_month", as_index=False).agg(
+        active_sellers=("seller_id", "nunique"),
+        alert_eligible_sellers=("eligible_for_alert", "sum"),
+        seller_orders=("seller_orders", "sum"),
+        seller_gmv=("seller_gmv", "sum"),
+        delivered_orders=("delivered_orders", "sum"),
+        late_orders=("late_orders", "sum"),
+        reviewed_orders=("reviewed_orders", "sum"),
+        low_review_orders=("low_review_orders", "sum"),
+        canceled_orders=("canceled_orders", "sum"),
     )
     status_counts = (
         seller_month.pivot_table(
@@ -343,12 +336,12 @@ def create_report_tables(
     monthly_summary["late_rate"] = monthly_summary["late_orders"] / monthly_summary[
         "delivered_orders"
     ].replace(0, np.nan)
-    monthly_summary["low_review_rate"] = monthly_summary[
-        "low_review_orders"
-    ] / monthly_summary["reviewed_orders"].replace(0, np.nan)
-    monthly_summary["cancellation_rate"] = monthly_summary[
-        "canceled_orders"
-    ] / monthly_summary["seller_orders"].replace(0, np.nan)
+    monthly_summary["low_review_rate"] = monthly_summary["low_review_orders"] / monthly_summary[
+        "reviewed_orders"
+    ].replace(0, np.nan)
+    monthly_summary["cancellation_rate"] = monthly_summary["canceled_orders"] / monthly_summary[
+        "seller_orders"
+    ].replace(0, np.nan)
 
     transition_summary = (
         latest.groupby(["previous_risk_status", "risk_status"], dropna=False)
@@ -357,9 +350,9 @@ def create_report_tables(
         .reset_index()
         .sort_values("sellers", ascending=False)
     )
-    latest_transitions = latest[latest["risk_transition"].isin(["escalated", "improved"])].sort_values(
-        ["risk_transition", "priority_score"], ascending=[True, False]
-    )
+    latest_transitions = latest[
+        latest["risk_transition"].isin(["escalated", "improved"])
+    ].sort_values(["risk_transition", "priority_score"], ascending=[True, False])
     operational_columns = [
         "order_month",
         "seller_id",
@@ -422,7 +415,9 @@ def create_figures(
     colors = {"stable": "#4c78a8", "watch": "#f2cf5b", "critical": "#d62728"}
     for status in ["stable", "watch", "critical"]:
         values = summary_plot[status].to_numpy()
-        ax.bar(x, values, bottom=bottom, label=status.replace("_", " ").title(), color=colors[status])
+        ax.bar(
+            x, values, bottom=bottom, label=status.replace("_", " ").title(), color=colors[status]
+        )
         bottom += values
     ax.set_xticks(x)
     ax.set_xticklabels(summary_plot["order_month"].astype(str), rotation=45, ha="right")
@@ -460,7 +455,12 @@ def create_figures(
 
     top_watchlist = watchlist.head(15).sort_values("priority_score")
     fig, ax = plt.subplots(figsize=(12, 7))
-    labels = top_watchlist["seller_id"].str.slice(0, 8) + " (" + top_watchlist["seller_state"].fillna("NA") + ")"
+    labels = (
+        top_watchlist["seller_id"].str.slice(0, 8)
+        + " ("
+        + top_watchlist["seller_state"].fillna("NA")
+        + ")"
+    )
     bar_colors = top_watchlist["risk_status"].map(status_colors)
     ax.barh(labels, top_watchlist["priority_score"], color=bar_colors)
     ax.set_title(f"Highest-Priority Seller Alerts, {latest['order_month'].iloc[0]}")
@@ -478,7 +478,11 @@ def create_figures(
     fig, ax = plt.subplots(figsize=(8, 7))
     image = ax.imshow(transition_matrix.to_numpy(), cmap="Blues", aspect="auto")
     ax.set_xticks(np.arange(len(transition_matrix.columns)))
-    ax.set_xticklabels([value.replace("_", " ").title() for value in transition_matrix.columns], rotation=25, ha="right")
+    ax.set_xticklabels(
+        [value.replace("_", " ").title() for value in transition_matrix.columns],
+        rotation=25,
+        ha="right",
+    )
     ax.set_yticks(np.arange(len(transition_matrix.index)))
     ax.set_yticklabels([value.replace("_", " ").title() for value in transition_matrix.index])
     ax.set_xlabel("Current Month Status")
@@ -519,7 +523,8 @@ def write_summary(
 
 ## Objective
 
-I converted the static seller scorecard into a monthly monitoring system that identifies seller deterioration, quantifies commercial exposure, and produces a prioritized operational watchlist.
+I converted the static seller scorecard into a monthly monitoring system that identifies seller
+deterioration, quantifies commercial exposure, and produces a prioritized operational watchlist.
 
 The latest complete monitoring month is **{latest_month}**. The incomplete final month in the source data is excluded.
 
@@ -544,16 +549,24 @@ The unit of analysis is a seller-month. Each active seller is evaluated using:
 4. Deterioration relative to the seller's own prior history
 5. Monthly commercial exposure
 
-Low-review, late-delivery, and cancellation rates use empirical-Bayes-style smoothing toward the current marketplace rate with a prior strength of {PRIOR_STRENGTH} orders. This reduces false alerts caused by very small monthly samples.
+Low-review, late-delivery, and cancellation rates use empirical-Bayes-style smoothing toward the
+current marketplace rate with a prior strength of {PRIOR_STRENGTH} orders. This reduces false alerts
+caused by very small monthly samples.
 
-The priority score combines 55% experience risk, 25% deterioration, and 20% seller value, then applies a reliability adjustment based on monthly order volume. Sellers need at least {MIN_MONTHLY_ORDERS} monthly seller-orders and {MIN_MONTHLY_REVIEWS} reviewed orders to receive a watch or critical alert.
+The priority score combines 55% experience risk, 25% deterioration, and 20% seller value, then
+applies a reliability adjustment based on monthly order volume. Sellers need at least
+{MIN_MONTHLY_ORDERS} monthly seller-orders and {MIN_MONTHLY_REVIEWS} reviewed orders to receive a
+watch or critical alert.
 
 - Critical: top 10% of eligible sellers by priority score and experience risk score of at least 60
 - Watch: top 25% of eligible sellers by priority score and experience risk score of at least 50
 
 ## Interpretation
 
-This is an operational prioritization system, not a causal model or automatic seller penalty system. A critical alert means that a seller combines relatively high customer-experience risk with sufficient evidence and business exposure. The recommended next step is a seller-level investigation using recent orders and complaint details.
+This is an operational prioritization system, not a causal model or automatic seller penalty
+system. A critical alert means that a seller combines relatively high customer-experience risk with
+sufficient evidence and business exposure. The recommended next step is a seller-level
+investigation using recent orders and complaint details.
 """
     (reports_dir / "seller_monthly_monitoring_summary.md").write_text(summary, encoding="utf-8")
 

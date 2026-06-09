@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 
@@ -32,7 +31,9 @@ def main() -> None:
         raise SystemExit(1)
 
     print("Raw data check passed.")
-    print(f"Found {len(EXPECTED_RAW_FILES)} expected CSV files in {RAW_DATA_DIR.relative_to(PROJECT_ROOT)}.")
+    print(
+        f"Found {len(EXPECTED_RAW_FILES)} expected CSV files in {RAW_DATA_DIR.relative_to(PROJECT_ROOT)}."
+    )
 
 
 if __name__ == "__main__":

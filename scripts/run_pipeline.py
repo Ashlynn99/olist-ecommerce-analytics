@@ -125,6 +125,8 @@ def main() -> None:
                 ]
             )
 
+    run_command([sys.executable, "scripts/format_markdown.py"])
+
 
 if __name__ == "__main__":
     main()
