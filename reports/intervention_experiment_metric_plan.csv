@@ -1,0 +1,6 @@
+metric_type,metric_name,definition,decision_use
+primary,low_review_rate,Share of treated/control orders with review_score <= 2.,Main success metric for customer-experience recovery.
+secondary,average_review_score,Mean review score among reviewed orders.,"Checks whether improvement is broad, not only at the low-score cutoff."
+secondary,repeat_purchase_within_90d,Observed repeat order within 90 days for eligible customers.,Monitors whether intervention improves downstream customer behavior.
+guardrail,cancellation_rate,Share of orders canceled after intervention eligibility.,Prevents operational actions from increasing cancellations.
+guardrail,cost_per_successful_recovery,Intervention cost divided by incremental low reviews avoided.,Ensures the program remains economically viable.

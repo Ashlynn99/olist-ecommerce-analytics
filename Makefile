@@ -4,7 +4,7 @@ PYTHON_BIN := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 CHECK_PYTHON := $(if $(wildcard $(PYTHON_BIN)),$(PYTHON_BIN),$(PYTHON))
 
-.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value dashboard format check report all clean
+.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value root-cause seller-playbook experiment-design dashboard format check report all clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -33,6 +33,15 @@ seller-monitor:
 intervention-value:
 	$(PYTHON_BIN) src/intervention_value_simulation.py
 
+root-cause:
+	$(PYTHON_BIN) src/root_cause_decomposition.py
+
+seller-playbook:
+	$(PYTHON_BIN) src/seller_operations_playbook.py
+
+experiment-design:
+	$(PYTHON_BIN) src/intervention_experiment_design.py
+
 dashboard:
 	$(PYTHON_BIN) -m streamlit run dashboard/app.py
 
@@ -53,6 +62,9 @@ report:
 	@printf "Cohort analysis: reports/cohort_repeat_analysis_summary.md\n"
 	@printf "Seller monthly monitoring: reports/seller_monthly_monitoring_summary.md\n"
 	@printf "Intervention value simulation: reports/intervention_value_summary.md\n"
+	@printf "Root-cause analysis: reports/root_cause_analysis_summary.md\n"
+	@printf "Seller operations playbook: reports/seller_operations_playbook.md\n"
+	@printf "Experiment design: reports/intervention_experiment_design.md\n"
 	@printf "Additional analysis: reports/additional_analysis_summary.md\n"
 
 all: data analysis report

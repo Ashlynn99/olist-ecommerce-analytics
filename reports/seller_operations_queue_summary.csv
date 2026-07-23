@@ -1,0 +1,5 @@
+action_tier,owner,sla_business_days,sellers,seller_orders,seller_gmv,commercial_value_at_risk_brl,avg_priority_score
+P0 Critical Escalation,Seller Operations Lead,2,23,744,90424.56,14420.864007375441,76.23661006399739
+P1 Critical Stabilization,Account Manager,3,11,193,26301.03,4595.2285045467925,75.65153007849345
+P2 Watch Deterioration,Seller Operations Analyst,5,22,348,60197.11,9562.206905856796,64.1090041686777
+P3 Watch Monitoring,Operations Analyst,7,27,252,31421.63,4633.261071335949,63.437348687865885

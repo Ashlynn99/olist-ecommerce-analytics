@@ -14,15 +14,16 @@ Data source: [Kaggle Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/
 ## Executive Summary
 
 - Built a reproducible Python, SQL, and Streamlit workflow across 9 relational source tables and
-  99,441 orders.
-- Identified delivery delay as the strongest operational issue: orders delivered 15+ days late had a
-  78.9% low-review rate.
+  99,441 orders, with 13 ordered notebooks and reusable scripts under `src/`.
+- Identified delivery delay and cross-state logistics as the main experience-risk layers: orders
+  delivered 15+ days late had a 78.9% low-review rate, and cross-state routes contributed 67.4% of
+  all low reviews.
 - Developed separate purchase-time and post-delivery risk models to distinguish prevention from
   service-recovery use cases.
-- Converted a static seller scorecard into monthly risk monitoring with prioritized alerts, risk
-  transitions, and recommended actions.
-- Translated model rankings into cost, ROI, break-even, and sensitivity scenarios for operational
-  decision-making.
+- Converted seller scoring into a monthly operating workflow with alert tiers, owners, SLA
+  expectations, diagnostic focus, and a prioritized action queue.
+- Translated model rankings into ROI scenarios and an A/B experiment design for validating whether
+  risk-based interventions create measurable business value.
 
 ## Core Business Questions
 
@@ -40,35 +41,41 @@ Data source: [Kaggle Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/
 | Purchase-time risk model | 0.640 ROC-AUC; top 10% captured 21.9% of low reviews without current-order delivery outcomes |
 | Customer lifecycle | 2.3% observed 90-day repeat rate; median 29 days to second purchase |
 | Seller monitoring | 34 critical and 49 watch sellers in the latest complete month; 44 sellers escalated |
+| Seller operations queue | 83 sellers prioritized; 23 P0 escalations; 33,212 BRL estimated value at risk |
+| Root-cause backlog | SP cross-state seller routes contributed 44.7% of all low reviews |
 | Intervention simulation | Highest-risk 5% maximized base-case expected value for both strategies |
 | Model value vs random | +6,678 BRL purchase-time and +37,421 BRL post-delivery incremental scenario value |
+| Experiment design | 5,248 candidate orders assigned through deterministic treatment/control split |
 
 ## Selected Visuals
 
-### Seller Monthly Risk Priority
+### Root-Cause Priority Matrix
 
-![Seller Monthly Risk Priority](reports/figures/seller_monthly_priority_matrix.png)
+![Root-Cause Priority Matrix](reports/figures/root_cause_segment_priority_matrix.png)
+
+### Seller Operations Queue
+
+![Seller Operations Queue](reports/figures/seller_operations_queue_by_tier.png)
 
 ### Purchase-Time Risk Model
 
 ![Purchase-Time Model Cumulative Gain](reports/figures/purchase_time_model_cumulative_gain.png)
 
-### Intervention Expected Net Value
+### Experiment Sample Size Plan
 
-![Intervention Expected Net Value](reports/figures/intervention_net_value_by_coverage.png)
-
-### Customer Cohort Activity
-
-![Observed Cohort Repeat-Purchase Activity](reports/figures/cohort_repeat_activity_heatmap.png)
+![Experiment Sample Size Plan](reports/figures/experiment_sample_size_plan.png)
 
 ## Interactive Dashboard
 
-The Streamlit dashboard turns the analysis into a four-view operating tool:
+The Streamlit dashboard turns the analysis into a multi-page operating tool:
 
 - Executive KPI Overview
+- Experience Root Cause
 - Seller Risk Monitoring
+- Seller Action Queue
 - Purchase-Time Risk Triage
 - Intervention ROI Simulator
+- Experiment Design
 
 Run it locally after generating the analysis outputs:
 
@@ -114,14 +121,17 @@ make purchase-model
 make cohort
 make seller-monitor
 make intervention-value
+make root-cause
+make seller-playbook
+make experiment-design
 ```
 
 ## Project Structure
 
 ```text
 ├── dashboard/
-│   └── app.py                # Four-view Streamlit operations dashboard
-├── notebooks/                # 10 ordered analysis notebooks
+│   └── app.py                # Streamlit operations dashboard
+├── notebooks/                # 13 ordered analysis notebooks
 ├── scripts/
 │   ├── run_pipeline.py       # End-to-end notebook runner
 │   └── quality_check.py      # Repository integrity and syntax checks
@@ -141,6 +151,9 @@ critical file line structure, and required project paths.
 - [Cohort and repeat analysis](reports/cohort_repeat_analysis_summary.md)
 - [Seller monthly monitoring](reports/seller_monthly_monitoring_summary.md)
 - [Intervention value simulation](reports/intervention_value_summary.md)
+- [Root-cause decomposition](reports/root_cause_analysis_summary.md)
+- [Seller operations playbook](reports/seller_operations_playbook.md)
+- [Intervention experiment design](reports/intervention_experiment_design.md)
 - [Data setup instructions](data/README.md)
 
 ## Decision Boundaries

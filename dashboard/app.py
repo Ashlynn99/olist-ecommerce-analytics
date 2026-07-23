@@ -179,6 +179,95 @@ def executive_overview() -> None:
     st.plotly_chart(style_figure(fig, 460), width="stretch")
 
 
+def experience_root_cause() -> None:
+    dimensions = read_csv(require_file(REPORTS_DIR / "root_cause_dimension_summary.csv"))
+    segments = read_csv(require_file(REPORTS_DIR / "root_cause_priority_segments.csv"))
+
+    severe_delay = dimensions[
+        dimensions["dimension"].eq("delivery_delay_bucket")
+        & dimensions["segment"].eq("15_plus_days_late")
+    ].iloc[0]
+    cross_state = dimensions[
+        dimensions["dimension"].eq("route_type") & dimensions["segment"].eq("cross_state")
+    ].iloc[0]
+    top_segment = segments.iloc[0]
+
+    st.title("Experience Root Cause")
+    st.caption("Contribution-based decomposition of low-review outcomes")
+    cols = st.columns(5)
+    cols[0].metric("15+ Late Risk", pct(severe_delay["low_review_rate"]))
+    cols[1].metric("15+ Late Share", pct(severe_delay["share_of_low_reviews"]))
+    cols[2].metric("Cross-State Share", pct(cross_state["share_of_low_reviews"]))
+    cols[3].metric("Top Segment", str(top_segment["segment"]))
+    cols[4].metric("Top Share", pct(top_segment["share_of_low_reviews"]))
+
+    family_options = ["All", *sorted(segments["segment_family"].dropna().unique())]
+    selected_family = st.segmented_control("Segment view", family_options, default="All")
+    filtered = segments.copy()
+    if selected_family != "All":
+        filtered = filtered[filtered["segment_family"].eq(selected_family)]
+    filtered = filtered.sort_values("priority_score", ascending=False)
+
+    left, right = st.columns([1.1, 1])
+    with left:
+        top = filtered.head(12).sort_values("share_of_low_reviews")
+        fig = px.bar(
+            top,
+            x="share_of_low_reviews",
+            y="segment",
+            orientation="h",
+            color="segment_family",
+            title="Top Root-Cause Segments by Low-Review Contribution",
+        )
+        fig.update_xaxes(title="Share of all low reviews", tickformat=".0%")
+        fig.update_yaxes(title="")
+        st.plotly_chart(style_figure(fig, 460), width="stretch")
+    with right:
+        fig = px.scatter(
+            filtered.head(40),
+            x="orders",
+            y="low_review_rate",
+            size="share_of_low_reviews",
+            color="segment_family",
+            hover_data=["segment", "excess_low_reviews", "priority_score"],
+            title="Risk vs Scale Priority Matrix",
+        )
+        fig.update_xaxes(title="Orders", type="log")
+        fig.update_yaxes(title="Low-review rate", tickformat=".0%")
+        st.plotly_chart(style_figure(fig, 460), width="stretch")
+
+    st.subheader("Root-Cause Backlog")
+    display_cols = [
+        "segment_family",
+        "segment",
+        "orders",
+        "low_review_orders",
+        "low_review_rate",
+        "share_of_low_reviews",
+        "excess_low_reviews",
+        "priority_score",
+    ]
+    st.dataframe(
+        filtered[display_cols].head(30),
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "low_review_rate": st.column_config.ProgressColumn(
+                "Low-Review Rate", min_value=0, max_value=1, format="%.1%%"
+            ),
+            "share_of_low_reviews": st.column_config.ProgressColumn(
+                "Share of Low Reviews", min_value=0, max_value=1, format="%.1%%"
+            ),
+            "priority_score": st.column_config.ProgressColumn(
+                "Priority", min_value=0, max_value=120, format="%.1f"
+            ),
+            "excess_low_reviews": st.column_config.NumberColumn(
+                "Excess Low Reviews", format="%.0f"
+            ),
+        },
+    )
+
+
 def seller_risk_monitoring() -> None:
     summary = read_csv(require_file(REPORTS_DIR / "seller_monthly_risk_summary.csv"))
     watchlist = read_csv(require_file(REPORTS_DIR / "seller_monthly_latest_watchlist.csv"))
@@ -268,6 +357,95 @@ def seller_risk_monitoring() -> None:
             ),
         },
     )
+
+
+def seller_action_queue() -> None:
+    queue = read_csv(require_file(REPORTS_DIR / "seller_operations_queue.csv"))
+    summary = read_csv(require_file(REPORTS_DIR / "seller_operations_queue_summary.csv"))
+    action_matrix = read_csv(require_file(REPORTS_DIR / "seller_alert_action_matrix.csv"))
+
+    st.title("Seller Action Queue")
+    st.caption("Owner-assigned seller operations queue with SLA and diagnostic focus")
+
+    p0_sellers = int(queue["action_tier"].eq("P0 Critical Escalation").sum())
+    total_value = queue["seller_gmv"].sum()
+    value_at_risk = queue["commercial_value_at_risk_brl"].sum()
+    cols = st.columns(5)
+    cols[0].metric("Sellers in Queue", f"{queue['seller_id'].nunique():,}")
+    cols[1].metric("P0 Escalations", f"{p0_sellers:,}")
+    cols[2].metric("Seller Orders", f"{int(queue['seller_orders'].sum()):,}")
+    cols[3].metric("Seller Value", compact_brl(total_value))
+    cols[4].metric("Value at Risk", compact_brl(value_at_risk))
+
+    left, right = st.columns([1, 1.1])
+    with left:
+        fig = px.bar(
+            summary.sort_values("sla_business_days"),
+            x="action_tier",
+            y="sellers",
+            color="owner",
+            title="Action Queue by Tier",
+        )
+        fig.update_xaxes(title="")
+        fig.update_yaxes(title="Sellers")
+        st.plotly_chart(style_figure(fig), width="stretch")
+    with right:
+        fig = px.bar(
+            summary.sort_values("commercial_value_at_risk_brl"),
+            x="commercial_value_at_risk_brl",
+            y="action_tier",
+            orientation="h",
+            color="owner",
+            title="Estimated Value at Risk by Tier",
+        )
+        fig.update_xaxes(title="BRL")
+        fig.update_yaxes(title="")
+        st.plotly_chart(style_figure(fig), width="stretch")
+
+    tiers = list(summary.sort_values("sla_business_days")["action_tier"])
+    selected_tiers = st.multiselect("Action tier", tiers, default=tiers[:2])
+    owners = sorted(queue["owner"].dropna().unique())
+    selected_owners = st.multiselect("Owner", owners, placeholder="All owners")
+    filtered = queue.copy()
+    if selected_tiers:
+        filtered = filtered[filtered["action_tier"].isin(selected_tiers)]
+    if selected_owners:
+        filtered = filtered[filtered["owner"].isin(selected_owners)]
+
+    st.subheader("Operational Queue")
+    display_cols = [
+        "queue_rank",
+        "seller_id",
+        "seller_state",
+        "risk_status",
+        "risk_transition",
+        "action_tier",
+        "owner",
+        "sla_business_days",
+        "seller_orders",
+        "seller_gmv",
+        "commercial_value_at_risk_brl",
+        "priority_score",
+        "diagnostic_focus",
+        "first_action",
+    ]
+    st.dataframe(
+        filtered[display_cols].sort_values("queue_rank"),
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "seller_gmv": st.column_config.NumberColumn("Seller Value", format="%.0f BRL"),
+            "commercial_value_at_risk_brl": st.column_config.NumberColumn(
+                "Value at Risk", format="%.0f BRL"
+            ),
+            "priority_score": st.column_config.ProgressColumn(
+                "Priority", min_value=0, max_value=100, format="%.1f"
+            ),
+        },
+    )
+
+    with st.expander("Action matrix"):
+        st.dataframe(action_matrix, width="stretch", hide_index=True)
 
 
 def purchase_time_triage() -> None:
@@ -428,11 +606,112 @@ def intervention_roi_simulator() -> None:
             """)
 
 
+def experiment_design() -> None:
+    summary = read_csv(require_file(REPORTS_DIR / "intervention_experiment_design_summary.csv"))
+    candidates = read_csv(require_file(REPORTS_DIR / "intervention_experiment_candidate_frame.csv"))
+    metric_plan = read_csv(require_file(REPORTS_DIR / "intervention_experiment_metric_plan.csv"))
+    strategy_labels = {
+        "purchase_time": "Purchase-Time Prevention",
+        "post_delivery": "Post-Delivery Recovery",
+    }
+
+    st.title("Experiment Design")
+    st.caption("A/B test plan for validating risk-based intervention value")
+    strategy = st.segmented_control(
+        "Strategy",
+        options=list(strategy_labels),
+        format_func=lambda value: strategy_labels[value],
+        default="post_delivery",
+    )
+    selected = summary[summary["strategy"].eq(strategy)].iloc[0]
+    strategy_candidates = candidates[candidates["strategy"].eq(strategy)].copy()
+
+    cols = st.columns(5)
+    cols[0].metric("Candidate Orders", f"{int(selected['candidate_orders']):,}")
+    cols[1].metric("Baseline Risk", pct(selected["baseline_low_review_rate"]))
+    cols[2].metric("Abs. MDE", pct(selected["minimum_detectable_effect_abs"]))
+    cols[3].metric("Treatment", f"{int(selected['treatment_orders']):,}")
+    cols[4].metric("Control", f"{int(selected['control_orders']):,}")
+
+    left, right = st.columns(2)
+    with left:
+        balance = (
+            strategy_candidates.groupby("assignment_group", as_index=False)
+            .agg(orders=("order_id", "nunique"))
+            .sort_values("assignment_group")
+        )
+        fig = px.bar(
+            balance,
+            x="assignment_group",
+            y="orders",
+            color="assignment_group",
+            title="Treatment-Control Assignment Balance",
+            color_discrete_map={"control": COLORS["gray"], "treatment": COLORS["green"]},
+        )
+        fig.update_xaxes(title="")
+        fig.update_yaxes(title="Orders")
+        st.plotly_chart(style_figure(fig), width="stretch")
+    with right:
+        sample_size = pd.DataFrame(
+            {
+                "Relative Reduction": ["10%", "15%", "20%"],
+                "Required Orders per Group": [
+                    selected["required_n_per_group_10pct_relative_reduction"],
+                    selected["required_n_per_group_15pct_relative_reduction"],
+                    selected["required_n_per_group_20pct_relative_reduction"],
+                ],
+            }
+        )
+        fig = px.bar(
+            sample_size,
+            x="Relative Reduction",
+            y="Required Orders per Group",
+            title="Sample Size Planning",
+            color_discrete_sequence=[COLORS["blue"]],
+        )
+        fig.add_hline(
+            y=min(selected["treatment_orders"], selected["control_orders"]),
+            line_dash="dash",
+            line_color=COLORS["red"],
+            annotation_text="available per group",
+        )
+        st.plotly_chart(style_figure(fig), width="stretch")
+
+    st.subheader("Metric Governance")
+    st.dataframe(metric_plan, width="stretch", hide_index=True)
+
+    st.subheader("Experiment Candidate Sample")
+    queue_columns = [
+        "order_id",
+        "assignment_group",
+        "risk_probability",
+        "customer_state",
+        "main_product_category",
+        "payment_total",
+        "target_low_review",
+    ]
+    available_columns = [column for column in queue_columns if column in strategy_candidates]
+    st.dataframe(
+        strategy_candidates[available_columns].head(50),
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "risk_probability": st.column_config.ProgressColumn(
+                "Risk Probability", min_value=0, max_value=1, format="%.1%%"
+            ),
+            "payment_total": st.column_config.NumberColumn("Payment", format="%.2f BRL"),
+        },
+    )
+
+
 PAGES = {
     "Executive KPI Overview": executive_overview,
+    "Experience Root Cause": experience_root_cause,
     "Seller Risk Monitoring": seller_risk_monitoring,
+    "Seller Action Queue": seller_action_queue,
     "Purchase-Time Risk Triage": purchase_time_triage,
     "Intervention ROI Simulator": intervention_roi_simulator,
+    "Experiment Design": experiment_design,
 }
 
 with st.sidebar:

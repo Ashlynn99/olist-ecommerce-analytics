@@ -357,19 +357,110 @@ Relevant figure:
 
 ![Low Review Cumulative Gain](figures/model_low_review_cumulative_gain.png)
 
+### Root-Cause Decomposition
+
+I decomposed low-review outcomes by contribution, not only by rate. This is important because a
+small segment can have a high low-review rate but limited business impact, while a larger segment
+can create more total customer-experience damage even at a lower rate.
+
+Key results:
+
+| Root-Cause View | Result |
+|---|---:|
+| 15+ days late low-review rate | 78.9% |
+| 15+ days late share of all low reviews | 8.2% |
+| Cross-state route share of all low reviews | 67.4% |
+| Top category contributor | bed_bath_table |
+| Top cross-dimensional segment | SP / cross_state |
+| Top segment share of all low reviews | 44.7% |
+
+The root-cause backlog ranks segments by contribution and risk together. In the current dataset,
+cross-state logistics and seller-state route combinations create the largest concentration of
+low-review outcomes, while severe delivery-delay buckets remain the clearest diagnostic signal for
+individual order dissatisfaction.
+
+Relevant figures:
+
+![Root-Cause Pareto](figures/root_cause_low_review_pareto.png)
+
+![Root-Cause Priority Matrix](figures/root_cause_segment_priority_matrix.png)
+
+### Seller Operations Playbook
+
+I converted the monthly seller monitor into a more operational playbook. The goal is to make seller
+risk actionable for a marketplace operations team, not only descriptive for a report.
+
+Latest action queue:
+
+| Metric | Value |
+|---|---:|
+| Sellers in action queue | 83 |
+| P0 critical escalations | 23 |
+| Seller-orders represented | 1,537 |
+| Seller order value represented | 208,344 BRL |
+| Estimated commercial value at risk | 33,212 BRL |
+
+The playbook assigns each seller to an action tier:
+
+| Tier | Owner | SLA | Operating Meaning |
+|---|---|---:|---|
+| P0 Critical Escalation | Seller Operations Lead | 2 business days | Critical and newly escalated sellers |
+| P1 Critical Stabilization | Account Manager | 3 business days | Critical sellers needing corrective plans |
+| P2 Watch Deterioration | Seller Operations Analyst | 5 business days | Watch sellers with deterioration or high priority |
+| P3 Watch Monitoring | Operations Analyst | 7 business days | Watch sellers requiring routine monitoring |
+
+This makes the seller risk monitor closer to a real operating workflow: assign owner, diagnose alert
+driver, act within SLA, and evaluate next-month status movement.
+
+Relevant figures:
+
+![Seller Operations Queue by Tier](figures/seller_operations_queue_by_tier.png)
+
+![Seller Value at Risk by Action Tier](figures/seller_operations_value_at_risk.png)
+
+### Intervention Experiment Design
+
+The intervention-value model is a scenario estimate, so I added an experiment design to define how
+the marketplace team could validate actual impact before scaling.
+
+Experiment plan:
+
+| Strategy | Candidate Orders | Baseline Low-Review Rate | Minimum Detectable Effect |
+|---|---:|---:|---:|
+| Purchase-time prevention | 2,624 | 36.0% | 5.3% |
+| Post-delivery recovery | 2,624 | 67.7% | 5.1% |
+
+The design uses deterministic 50/50 treatment-control assignment at the `order_id` level. The
+primary metric is low-review rate, with average review score, observed 90-day repeat behavior,
+cancellation rate, and cost per successful recovery tracked as secondary or guardrail metrics.
+
+This completes the decision loop: model ranking identifies likely risk, ROI simulation estimates
+economic value, and experiment design defines how to measure whether the intervention truly works.
+
+Relevant figures:
+
+![Experiment Sample Size Plan](figures/experiment_sample_size_plan.png)
+
+![Experiment Assignment Balance](figures/experiment_assignment_balance.png)
+
 ## Operational Dashboard
 
-I packaged the main analytical outputs into a four-view Streamlit dashboard so that the project can
-be used as an operating tool rather than only read as a report:
+I packaged the main analytical outputs into a Streamlit dashboard so that the project can be used as
+an operating tool rather than only read as a report:
 
 - **Executive KPI Overview:** marketplace scale, payment volume, delivery performance, and
   customer-experience risk.
+- **Experience Root Cause:** contribution-based root-cause backlog across delay, route, geography,
+  and category segments.
 - **Seller Risk Monitoring:** monthly alert volumes, risk transitions, and a prioritized seller
   watchlist.
+- **Seller Action Queue:** P0–P3 seller operating queue with owners, SLA, diagnostic focus, and
+  estimated value at risk.
 - **Purchase-Time Risk Triage:** leakage-controlled model performance and an order-level risk queue
   for preventive action.
 - **Intervention ROI Simulator:** adjustable contact cost, effectiveness, recovery value, and
   coverage assumptions.
+- **Experiment Design:** treatment/control assignment, sample-size planning, and metric governance.
 
 Run the dashboard after generating the analysis outputs:
 
@@ -399,18 +490,23 @@ make dashboard
    High-value high-risk sellers should be reviewed first. Monthly risk transitions can distinguish
    persistent risk from newly deteriorating sellers and direct account-management attention.
 
-5. Separate purchase-time and post-delivery models.
+5. Convert seller alerts into an operating cadence.
+
+   P0 and P1 sellers should receive owner-assigned review with explicit SLA tracking. Weekly and
+   monthly reviews should track whether sellers move back to stable, stay risky, or deteriorate.
+
+6. Separate purchase-time and post-delivery models.
 
    Use the purchase-time model for preventive monitoring and the post-delivery model for
    service-recovery prioritization. Their different performance levels reflect different information
    availability.
 
-6. Track customer lifecycle metrics with fixed observation windows.
+7. Track customer lifecycle metrics with fixed observation windows.
 
    Use the 90-day observed repeat rate as a consistent monitoring metric and compare it across
    cohorts, categories, and first-order experiences.
 
-7. Pilot interventions before scaling.
+8. Pilot interventions before scaling.
 
    Start with the highest-risk 5% of orders and use randomized treatment and control groups to
    estimate actual incremental recovery, cost per contact, and downstream customer value.
@@ -438,6 +534,12 @@ make dashboard
 
 This project shows a complete but focused analytics workflow: raw data understanding, cleaning,
 business analysis, SQL querying, predictive modeling, customer lifecycle analysis, and seller
-monitoring. The main business takeaway is that logistics performance is closely tied to customer
-satisfaction, and that order and seller risk can be structured into practical prioritization
-workflows.
+monitoring. I extended the analysis into root-cause decomposition, seller operations playbook, and
+experiment design so the final project reads less like a one-time notebook analysis and more like a
+repeatable operating system for marketplace experience management.
+
+The main business takeaway is that logistics performance is closely tied to customer satisfaction,
+and that order, seller, and route risk can be structured into practical prioritization workflows.
+The strongest next step in a real company setting would be a controlled pilot that tests whether
+risk-based outreach reduces low-review outcomes without increasing cost, cancellations, or seller
+friction.

@@ -25,6 +25,9 @@ REQUIRED_PATHS = [
     "dashboard/app.py",
     "requirements-dev.txt",
     "reports/final_report.md",
+    "reports/root_cause_analysis_summary.md",
+    "reports/seller_operations_playbook.md",
+    "reports/intervention_experiment_design.md",
     "scripts/run_pipeline.py",
 ]
 MAKE_TARGETS = [
@@ -36,6 +39,9 @@ MAKE_TARGETS = [
     "cohort",
     "seller-monitor",
     "intervention-value",
+    "root-cause",
+    "seller-playbook",
+    "experiment-design",
     "dashboard",
     "report",
     "all",
@@ -92,8 +98,8 @@ def check_source_line_length() -> None:
 
 def check_notebooks() -> None:
     notebooks = sorted((PROJECT_ROOT / "notebooks").glob("*.ipynb"))
-    if len(notebooks) != 10:
-        fail(f"Expected 10 notebooks; found {len(notebooks)}.")
+    if len(notebooks) != 13:
+        fail(f"Expected 13 notebooks; found {len(notebooks)}.")
     for path in notebooks:
         with path.open(encoding="utf-8") as handle:
             json.load(handle)
@@ -149,7 +155,7 @@ def main() -> None:
 
     print(
         f"Repository quality checks passed: {len(python_files())} Python files, "
-        f"10 notebooks, and {len(markdown_files())} Markdown files."
+        f"13 notebooks, and {len(markdown_files())} Markdown files."
     )
 
 

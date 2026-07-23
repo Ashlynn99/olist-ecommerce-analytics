@@ -20,6 +20,11 @@ MATPLOTLIB_CACHE_DIR = PROJECT_ROOT / ".matplotlib_cache"
 MATPLOTLIB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(MATPLOTLIB_CACHE_DIR))
 
+for import_path in [PROJECT_ROOT, PROJECT_ROOT / "src"]:
+    import_path_text = str(import_path)
+    if import_path_text not in sys.path:
+        sys.path.insert(0, import_path_text)
+
 NOTEBOOKS = [
     "notebooks/01_data_understanding.ipynb",
     "notebooks/02_data_cleaning.ipynb",
@@ -31,6 +36,9 @@ NOTEBOOKS = [
     "notebooks/08_cohort_repeat_analysis.ipynb",
     "notebooks/09_seller_monthly_risk_monitor.ipynb",
     "notebooks/10_intervention_value_simulation.ipynb",
+    "notebooks/11_root_cause_decomposition.ipynb",
+    "notebooks/12_seller_operations_playbook.ipynb",
+    "notebooks/13_intervention_experiment_design.ipynb",
 ]
 
 

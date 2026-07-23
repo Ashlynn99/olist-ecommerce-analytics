@@ -1,0 +1,5 @@
+action_tier,trigger,owner,sla_business_days,first_action,success_metric
+P0 Critical Escalation,Critical status and escalated from previous month,Seller Operations Lead,2,Open seller-level incident review and inspect recent delayed orders.,Reduce late rate and low-review rate in next monitoring month.
+P1 Critical Stabilization,Critical status with persistent high experience risk,Account Manager,3,Review fulfillment process and agree on corrective operating plan.,Move seller from critical to watch or stable within two months.
+P2 Watch Deterioration,Watch status with deterioration or high priority score,Seller Operations Analyst,5,Diagnose alert driver and monitor next-cycle order experience.,Prevent escalation into critical status.
+P3 Watch Monitoring,Watch status without immediate escalation signal,Operations Analyst,7,Add to weekly monitoring list and review repeated alert drivers.,Maintain stable status and avoid deterioration.
