@@ -42,6 +42,8 @@ MAKE_TARGETS = [
     "root-cause",
     "seller-playbook",
     "experiment-design",
+    "agent-briefing",
+    "agent-briefing-ai",
     "dashboard",
     "report",
     "all",

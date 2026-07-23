@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -47,6 +48,16 @@ def read_csv(path: Path, **kwargs) -> pd.DataFrame:
     return pd.read_csv(path, **kwargs)
 
 
+@st.cache_data
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+@st.cache_data
+def read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def require_file(path: Path) -> Path:
     if not path.exists():
         st.error(f"Missing generated file: `{path.relative_to(PROJECT_ROOT)}`")
@@ -80,6 +91,106 @@ def style_figure(fig: go.Figure, height: int = 390) -> go.Figure:
         hoverlabel=dict(namelength=-1),
     )
     return fig
+
+
+def ai_operations_briefing() -> None:
+    context = read_json(require_file(REPORTS_DIR / "ai_operations_context.json"))
+    briefing = read_text(require_file(REPORTS_DIR / "ai_operations_briefing.md"))
+
+    snapshot = context["snapshot"]
+    counts = snapshot["counts"]
+    rates = snapshot["rates"]
+    queue = context["seller_action_queue"]
+    mode_label = "Offline" if context.get("agent_mode") == "offline_deterministic" else "OpenAI"
+    posture_label = str(snapshot["posture"]).split()[0].title()
+
+    st.title("AI Operations Briefing")
+    st.caption("Offline operations inspection agent for seller risk and intervention readiness")
+    cols = st.columns(5)
+    cols[0].metric("Agent Mode", mode_label)
+    cols[1].metric("Month", str(snapshot["monitoring_month"]))
+    cols[2].metric("Critical", f"{int(counts['critical']):,}")
+    cols[3].metric("Watch", f"{int(counts['watch']):,}")
+    cols[4].metric("Late Rate", pct(rates["late_rate"]))
+
+    cols = st.columns(4)
+    cols[0].metric("Operating Posture", posture_label)
+    cols[1].metric("Seller Queue", f"{int(queue['totals']['sellers']):,}")
+    cols[2].metric(
+        "Queue Value at Risk", compact_brl(queue["totals"]["commercial_value_at_risk_brl"])
+    )
+    cols[3].metric("Alert Eligible", f"{int(counts['alert_eligible_sellers']):,}")
+
+    left, right = st.columns([1, 1.05])
+    with left:
+        drivers = pd.DataFrame(context["top_alert_drivers"]).head(6)
+        fig = px.bar(
+            drivers.sort_values("sellers"),
+            x="sellers",
+            y="driver",
+            orientation="h",
+            title="Dominant Seller Alert Drivers",
+            color_discrete_sequence=[COLORS["red"]],
+        )
+        fig.update_xaxes(title="Sellers")
+        fig.update_yaxes(title="")
+        st.plotly_chart(style_figure(fig, 360), width="stretch")
+    with right:
+        tier_summary = pd.DataFrame(queue["by_tier"])
+        fig = px.bar(
+            tier_summary,
+            x="action_tier",
+            y="sellers",
+            color="owner",
+            title="Seller Action Queue by Tier",
+        )
+        fig.update_xaxes(title="")
+        fig.update_yaxes(title="Sellers")
+        st.plotly_chart(style_figure(fig, 360), width="stretch")
+
+    root_segments = pd.DataFrame(context["root_cause"]["top_priority_segments"]).head(8)
+    if not root_segments.empty:
+        fig = px.bar(
+            root_segments.sort_values("share_of_low_reviews"),
+            x="share_of_low_reviews",
+            y="segment",
+            orientation="h",
+            color="segment_family",
+            title="Root-Cause Segments Feeding the Briefing",
+        )
+        fig.update_xaxes(title="Share of all low reviews", tickformat=".0%")
+        fig.update_yaxes(title="")
+        st.plotly_chart(style_figure(fig, 430), width="stretch")
+
+    st.subheader("Priority Action Queue")
+    action_queue = pd.DataFrame(queue["top_actions"])
+    display_cols = [
+        "queue_rank",
+        "seller_id",
+        "action_tier",
+        "owner",
+        "sla_business_days",
+        "seller_state",
+        "priority_score",
+        "first_action",
+        "success_metric",
+    ]
+    st.dataframe(
+        action_queue[display_cols],
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "priority_score": st.column_config.ProgressColumn(
+                "Priority", min_value=0, max_value=100, format="%.1f"
+            ),
+        },
+    )
+
+    st.subheader("Generated Briefing")
+    st.markdown(briefing)
+
+    with st.expander("Structured agent context"):
+        st.json(context)
 
 
 def executive_overview() -> None:
@@ -706,6 +817,7 @@ def experiment_design() -> None:
 
 PAGES = {
     "Executive KPI Overview": executive_overview,
+    "AI Operations Briefing": ai_operations_briefing,
     "Experience Root Cause": experience_root_cause,
     "Seller Risk Monitoring": seller_risk_monitoring,
     "Seller Action Queue": seller_action_queue,

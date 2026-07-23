@@ -22,6 +22,8 @@ Data source: [Kaggle Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/
   service-recovery use cases.
 - Converted seller scoring into a monthly operating workflow with alert tiers, owners, SLA
   expectations, diagnostic focus, and a prioritized action queue.
+- Added an offline AI Operations Briefing agent that converts generated report tables into a
+  no-API executive inspection brief, with an optional OpenAI rewrite layer.
 - Translated model rankings into ROI scenarios and an A/B experiment design for validating whether
   risk-based interventions create measurable business value.
 
@@ -70,6 +72,7 @@ Data source: [Kaggle Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/
 The Streamlit dashboard turns the analysis into a multi-page operating tool:
 
 - Executive KPI Overview
+- AI Operations Briefing
 - Experience Root Cause
 - Seller Risk Monitoring
 - Seller Action Queue
@@ -83,9 +86,46 @@ Run it locally after generating the analysis outputs:
 make dashboard
 ```
 
+## AI Operations Briefing Agent
+
+The project includes an offline-first operations inspection agent that converts generated analytics
+tables into an executive seller-risk briefing. The agent is designed around a deterministic
+analytics layer first, with an optional OpenAI rewrite layer only when API billing is configured.
+
+```text
+Generated report tables
+-> deterministic agent tools
+-> structured operations context
+-> offline Markdown briefing
+-> Streamlit AI Operations Briefing page
+```
+
+Default no-cost workflow:
+
+```bash
+make agent-briefing
+```
+
+This writes:
+
+- `reports/ai_operations_context.json`
+- `reports/ai_operations_briefing.md`
+
+Optional API-enhanced workflow:
+
+```bash
+export OPENAI_API_KEY="..."
+make agent-briefing-ai
+```
+
+The offline version is the production-safe baseline: it is reproducible, avoids hallucinated
+metrics, preserves human approval for seller/customer actions, and keeps seller alerts as
+investigation priorities rather than automatic enforcement decisions.
+
 ## Technical Stack
 
-`Python` · `pandas` · `scikit-learn` · `SQL` · `DuckDB` · `Streamlit` · `Plotly` · `Matplotlib`
+`Python` · `pandas` · `scikit-learn` · `SQL` · `DuckDB` · `Streamlit` · `Plotly` · `Matplotlib` ·
+`OpenAI API-ready`
 
 Key modeling and analytical controls:
 
@@ -124,6 +164,10 @@ make intervention-value
 make root-cause
 make seller-playbook
 make experiment-design
+make agent-briefing
+
+# Optional: requires OPENAI_API_KEY and API billing/credits
+make agent-briefing-ai
 ```
 
 ## Project Structure
@@ -154,6 +198,8 @@ critical file line structure, and required project paths.
 - [Root-cause decomposition](reports/root_cause_analysis_summary.md)
 - [Seller operations playbook](reports/seller_operations_playbook.md)
 - [Intervention experiment design](reports/intervention_experiment_design.md)
+- [AI operations briefing](reports/ai_operations_briefing.md)
+- [Resume project summary](reports/resume_project_summary.md)
 - [Data setup instructions](data/README.md)
 
 ## Decision Boundaries

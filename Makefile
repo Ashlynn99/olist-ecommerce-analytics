@@ -4,7 +4,7 @@ PYTHON_BIN := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 CHECK_PYTHON := $(if $(wildcard $(PYTHON_BIN)),$(PYTHON_BIN),$(PYTHON))
 
-.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value root-cause seller-playbook experiment-design dashboard format check report all clean
+.PHONY: setup data analysis sql purchase-model cohort seller-monitor intervention-value root-cause seller-playbook experiment-design agent-briefing agent-briefing-ai dashboard format check report all clean
 
 setup:
 	$(PYTHON) -m venv $(VENV)
@@ -42,6 +42,12 @@ seller-playbook:
 experiment-design:
 	$(PYTHON_BIN) src/intervention_experiment_design.py
 
+agent-briefing:
+	$(PYTHON_BIN) src/operations_inspection_agent.py --offline
+
+agent-briefing-ai:
+	$(PYTHON_BIN) src/operations_inspection_agent.py --use-openai
+
 dashboard:
 	$(PYTHON_BIN) -m streamlit run dashboard/app.py
 
@@ -65,9 +71,10 @@ report:
 	@printf "Root-cause analysis: reports/root_cause_analysis_summary.md\n"
 	@printf "Seller operations playbook: reports/seller_operations_playbook.md\n"
 	@printf "Experiment design: reports/intervention_experiment_design.md\n"
+	@printf "AI operations briefing: reports/ai_operations_briefing.md\n"
 	@printf "Additional analysis: reports/additional_analysis_summary.md\n"
 
-all: data analysis report
+all: data analysis agent-briefing report
 
 clean:
 	@printf "Generated data and report outputs are intentionally kept.\n"
